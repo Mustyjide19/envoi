@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="30" fill="#1E3A8A"/>
+  
+  <!-- Document/File shape -->
+  <path d="M20 18 h16 l6 6 v22 a2 2 0 0 1 -2 2 h-20 a2 2 0 0 1 -2 -2 v-26 a2 2 0 0 1 2 -2 z" 
+        fill="#FFFFFF" opacity="0.9"/>
+  
+  <!-- Folded corner of document -->
+  <path d="M36 18 v6 h6 z" fill="#E2E8F0"/>
+  
+  <!-- Lock/Shield icon in center -->
+  <g transform="translate(32, 36)">
+    <!-- Shield shape -->
+    <path d="M-6,-6 L0,-8 L6,-6 L6,0 Q6,4 0,6 Q-6,4 -6,0 Z" 
+          fill="#6366F1"/>
+    
+    <!-- Lock keyhole -->
+    <circle cx="0" cy="-1" r="1.5" fill="#FFFFFF"/>
+    <rect x="-0.7" y="-1" width="1.4" height="3" rx="0.5" fill="#FFFFFF"/>
+  </g>
+  
+  <!-- Upward share arrow -->
+  <g transform="translate(28, 26)">
+    <path d="M0,-3 L2,-1 L1,-1 L1,2 L-1,2 L-1,-1 L-2,-1 Z" 
+          fill="#6366F1" opacity="0.8"/>
+  </g>
+</svg>
