@@ -14,10 +14,12 @@ export default function Page() {
 
         <div className="relative z-10 flex h-full flex-col justify-between p-12 text-white">
           <div className="flex items-center gap-3">
-            <div className="h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center font-bold text-2xl border border-white/20">
-              E
-            </div>
-            <span className="text-2xl font-bold tracking-tight">Envoi</span>
+            <img
+              src="/logoicon.jpg"
+              alt="Envoi"
+              className="h-10 w-10 object-contain"
+            />
+            <span className="text-2xl font-bold tracking-tight">ENVOI</span>
           </div>
 
           <div>
