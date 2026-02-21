@@ -1,10 +1,12 @@
 "use client";
 
-import { UserButton } from "@clerk/nextjs";
+import { useSession, signOut } from "next-auth/react";
 import { AlignJustify } from "lucide-react";
 import Image from "next/image";
 
 function TopHeader({ onMenuClick }) {
+  const { data: session } = useSession();
+
   return (
     <div className="relative flex p-5 border-b items-center justify-between md:justify-end">
       <div className="flex items-center gap-3 md:hidden">
@@ -28,7 +30,17 @@ function TopHeader({ onMenuClick }) {
         <span className="font-bold text-lg">ENVOI</span>
       </div>
 
-      <UserButton />
+      {session && (
+        <div className="flex items-center gap-3">
+          <span className="text-sm">{session.user?.name}</span>
+          <button
+            onClick={() => signOut()}
+            className="px-3 py-1 text-sm bg-black text-white rounded-md"
+          >
+            Sign Out
+          </button>
+        </div>
+      )}
     </div>
   );
 }

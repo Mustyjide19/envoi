@@ -1,6 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { ClerkProvider } from "@clerk/nextjs";
+import { SessionProvider } from "./_components/SessionProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,21 +13,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Envoi - Secure File Sharing",
-  description: "Upload, share, and manage your files with ease. Secure file sharing made simple.",
-  icons: {
-    icon: '/favicon.svg',
-  },
+  title: "Envoi",
+  description: "Secure file sharing platform",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <ClerkProvider>
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {children}
+      <body 
+        className={`${geistSans.variable} ${geistMono.variable}`}
+        suppressHydrationWarning
+      >
+        <SessionProvider>
+          {children}
+        </SessionProvider>
       </body>
     </html>
-    </ClerkProvider>
   );
 }

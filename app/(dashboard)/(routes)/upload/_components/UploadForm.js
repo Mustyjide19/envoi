@@ -1,6 +1,6 @@
 'use client';
 import React, { useRef, useState } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useSession } from "next-auth/react";
 import AlertMessage from './AlertMessage';
 import FilePreview from './FilePreview';
 
@@ -26,7 +26,9 @@ const ALLOWED_TYPES = [
 ];
 
 function UploadForm({ uploadFile }) {
-  const { isSignedIn } = useUser();
+  const { data: session, status } = useSession();
+  const isSignedIn = status === "authenticated";
+
   const fileInputRef = useRef(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [alertMsg, setAlertMsg] = useState('');
@@ -43,31 +45,24 @@ function UploadForm({ uploadFile }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Reset states
     setShowSuccess(false);
     setShowError(false);
     setAlertMsg('');
 
-    // Check file size
     if (file.size > MAX_FILE_SIZE) {
       setErrorMessage('File size exceeds the 30MB limit. Please choose a smaller file.');
       setShowError(true);
       setSelectedFile(null);
-      e.target.value = ''; // Reset input
-      
-      // Auto hide error after 4 seconds
+      e.target.value = '';
       setTimeout(() => setShowError(false), 4000);
       return;
     }
 
-    // Check file type
     if (!ALLOWED_TYPES.includes(file.type)) {
       setErrorMessage('Invalid file type. Please upload: PDF, Word, PowerPoint, Excel, CSV, TXT, or Images (JPG, PNG, WEBP).');
       setShowError(true);
       setSelectedFile(null);
-      e.target.value = ''; // Reset input
-      
-      // Auto hide error after 4 seconds
+      e.target.value = '';
       setTimeout(() => setShowError(false), 4000);
       return;
     }
@@ -75,10 +70,9 @@ function UploadForm({ uploadFile }) {
     setSelectedFile(file);
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!selectedFile || !uploadFile) return;
 
-    // Double check file validation before upload
     if (!ALLOWED_TYPES.includes(selectedFile.type)) {
       setErrorMessage('Invalid file type detected. Upload cancelled.');
       setShowError(true);
@@ -99,28 +93,23 @@ function UploadForm({ uploadFile }) {
     setAlertMsg('Uploading...');
     setShowSuccess(false);
     setShowError(false);
-    
+
     try {
-      // Call the upload function from parent
-      uploadFile(selectedFile);
-      
-      // Show success after upload completes
+      await uploadFile(selectedFile);
+
+      setIsUploading(false);
+      setShowSuccess(true);
+      setSelectedFile(null);
+      setAlertMsg('');
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
       setTimeout(() => {
-        setIsUploading(false);
-        setShowSuccess(true);
-        setSelectedFile(null);
-        setAlertMsg('');
-        
-        // Reset file input
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-        
-        // Hide success message after 3 seconds
-        setTimeout(() => {
-          setShowSuccess(false);
-        }, 3000);
-      }, 4000);
+        setShowSuccess(false);
+      }, 3000);
+
     } catch (error) {
       console.error('Upload error:', error);
       setIsUploading(false);
@@ -140,7 +129,6 @@ function UploadForm({ uploadFile }) {
 
   return (
     <>
-      {/* Success Animation Popup */}
       {showSuccess && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fade-in">
           <div className="bg-white rounded-2xl p-8 max-w-md mx-4 text-center animate-scale-in">
@@ -157,7 +145,6 @@ function UploadForm({ uploadFile }) {
         </div>
       )}
 
-      {/* Error Animation Popup */}
       {showError && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fade-in">
           <div className="bg-white rounded-2xl p-8 max-w-md mx-4 text-center animate-shake">
@@ -180,24 +167,22 @@ function UploadForm({ uploadFile }) {
         <div className="flex justify-center w-full">
           <div className="flex flex-col items-center justify-center w-full max-w-xl h-80 bg-blue-50 border-2 border-dashed border-blue-300 rounded-3xl shadow-md">
             <div className="flex flex-col items-center justify-center px-8 py-6">
-              <svg className="w-24 h-24 mb-6 text-blue-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v9m-5 0H5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1h-2M8 9l4-5 4 5" />
-              </svg>
+              <p className="mb-3 text-xl font-semibold text-blue-900">
+                Browse and select a file
+              </p>
 
-              <p className="mb-3 text-xl font-semibold text-blue-900">Browse and select a file</p>
-              
               <p className="text-sm mb-2 text-blue-700 text-center">
                 Accepted: PDF, Word, PowerPoint, Excel, CSV, TXT, Images
               </p>
-              
+
               <p className="text-base mb-5 text-blue-700">
                 Max file size: <span className="font-semibold text-blue-900">30MB</span>
               </p>
 
-              <button 
-                type="button" 
-                onClick={handleBrowseClick} 
-                disabled={isUploading} 
+              <button
+                type="button"
+                onClick={handleBrowseClick}
+                disabled={isUploading}
                 className="inline-flex items-center text-blue-900 bg-white border border-blue-300 hover:bg-blue-100 font-medium rounded-xl text-base px-6 py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Browse file
@@ -206,75 +191,33 @@ function UploadForm({ uploadFile }) {
           </div>
         </div>
 
-        <input 
-          ref={fileInputRef} 
-          type="file" 
-          className="hidden" 
-          onChange={handleFileChange} 
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          onChange={handleFileChange}
           disabled={isUploading}
           accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp"
         />
 
-        <FilePreview file={selectedFile} onRemove={() => setSelectedFile(null)} />
+        <FilePreview
+          file={selectedFile}
+          onRemove={() => setSelectedFile(null)}
+        />
 
-        <button 
-          type="button" 
-          onClick={handleUpload} 
-          disabled={!selectedFile || isUploading} 
-          className={`px-8 py-3 rounded-xl text-base font-medium transition-colors ${selectedFile && !isUploading ? 'bg-blue-900 text-white hover:bg-blue-800' : 'bg-gray-300 text-gray-600 cursor-not-allowed'}`}
+        <button
+          type="button"
+          onClick={handleUpload}
+          disabled={!selectedFile || isUploading}
+          className={`px-8 py-3 rounded-xl text-base font-medium transition-colors ${
+            selectedFile && !isUploading
+              ? 'bg-blue-900 text-white hover:bg-blue-800'
+              : 'bg-gray-300 text-gray-600 cursor-not-allowed'
+          }`}
         >
           {isUploading ? 'Uploading...' : 'Upload'}
         </button>
       </div>
-
-      <style jsx>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-        
-        @keyframes scale-in {
-          0% {
-            transform: scale(0);
-            opacity: 0;
-          }
-          50% {
-            transform: scale(1.05);
-          }
-          100% {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-        
-        @keyframes shake {
-          0%, 100% {
-            transform: translateX(0);
-          }
-          10%, 30%, 50%, 70%, 90% {
-            transform: translateX(-10px);
-          }
-          20%, 40%, 60%, 80% {
-            transform: translateX(10px);
-          }
-        }
-        
-        .animate-fade-in {
-          animation: fade-in 0.3s ease-out;
-        }
-        
-        .animate-scale-in {
-          animation: scale-in 0.4s ease-out;
-        }
-        
-        .animate-shake {
-          animation: shake 0.5s ease-out;
-        }
-      `}</style>
     </>
   );
 }

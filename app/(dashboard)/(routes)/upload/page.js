@@ -1,43 +1,46 @@
 "use client";
-import React from "react";
-import { useUser } from "@clerk/nextjs"; // ✅ Add this import
+import React, { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import UploadForm from "./_components/UploadForm";
-import { app } from "@/firebaseConfig";
+import { app } from "../../../../firebaseConfig";
 import { getFirestore, doc, setDoc } from "firebase/firestore";
+import { useRouter } from "next/navigation";
 import {
   getStorage,
   ref,
   uploadBytesResumable,
   getDownloadURL,
 } from "firebase/storage";
-import { generateRandomString } from "@/app/_utils/GenerateRandomString";
+import { generateRandomString } from "../../../_utils/GenerateRandomString";
 
 function Upload() {
-  const { user } = useUser();
+  const { data: session, status } = useSession();
   const storage = getStorage(app);
   const db = getFirestore(app);
+  const router = useRouter();
   
+  const [fileId, setFileDocId] = useState();
+  const [progress, setProgress] = useState(0);
+  const [uploadCompleted, setUploadCompleted] = useState(false);
+
   const allowedTypes = [
-    // Documents
     "application/pdf",
     "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "application/vnd.ms-powerpoint",
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     "text/plain",
-    // Excel & CSV
     "application/vnd.ms-excel",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     "text/csv",
-    // Images
     "image/jpeg",
     "image/png",
     "image/jpg",
     "image/webp",
   ];
-  
+
   const uploadFile = (file) => {
-    if (!file) return;
+    if (!file || status !== "authenticated") return;
     
     if (!allowedTypes.includes(file.type)) {
       alert(
@@ -45,36 +48,34 @@ function Upload() {
       );
       return;
     }
-    
+
     const metadata = {
       contentType: file.type,
     };
-    
+
     const timestamp = Date.now();
     const fileName = `${timestamp}-${file.name}`;
     const storageRef = ref(storage, `file-upload/${fileName}`);
     const uploadTask = uploadBytesResumable(storageRef, file, metadata);
-    
+
     uploadTask.on(
       "state_changed",
       (snapshot) => {
-        const progress =
+        const uploadProgress =
           (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        console.log("Upload is " + progress + "% done");
+        setProgress(uploadProgress);
+        console.log("Upload is " + uploadProgress + "% done");
       },
       (error) => {
         console.error("Upload failed:", error);
       },
       async () => {
         const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-        console.log("File available at:", downloadURL);
-        
-        // Save file info to Firestore
         await saveInfo(fileName, file, downloadURL);
       }
     );
   };
-  
+
   const saveInfo = async (fileName, file, downloadURL) => {
     const docId = generateRandomString().toString();
     
@@ -84,25 +85,61 @@ function Upload() {
         fileType: file.type,
         fileSize: file.size,
         fileURL: downloadURL,
-        userEmail: user?.primaryEmailAddress?.emailAddress,
-        userName: user?.fullName,
-        password: '',
+        userEmail: session?.user?.email || "",
+        userName: session?.user?.name || "",
+        password: "",
         id: docId,
         shortUrl: process.env.NEXT_PUBLIC_BASE_URL + docId,
       });
       
       console.log("File info saved to Firestore with ID:", docId);
+      
+      // Set the file ID and mark upload as completed
+      setFileDocId(docId);
+      setUploadCompleted(true);
+      
     } catch (error) {
       console.error("Error saving to Firestore:", error);
     }
   };
-  
+
+  // Redirect to file-preview when upload is complete
+  useEffect(() => {
+    if (uploadCompleted && fileId) {
+      setTimeout(() => {
+        setUploadCompleted(false);
+        router.push("/file-preview/" + fileId);
+      }, 2000);
+    }
+  }, [uploadCompleted, fileId, router]);
+
   return (
     <div className="p-5 px-8 md:px-28">
       <h2 className="text-[20px] text-center m-5">
         Start <strong className="text-blue-900">Uploading</strong> Files and{" "}
         <strong className="text-blue-900">Share</strong> it
       </h2>
+      
+      {progress > 0 && progress < 100 && (
+        <div className="mb-4">
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div
+              className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+          <p className="text-center mt-2 text-sm text-gray-600">
+            Uploading: {Math.round(progress)}%
+          </p>
+        </div>
+      )}
+      
+      {uploadCompleted && (
+        <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
+          ✅ Upload successful! Redirecting to file preview...
+        </div>
+      )}
+      
       <UploadForm uploadFile={uploadFile} />
     </div>
   );
