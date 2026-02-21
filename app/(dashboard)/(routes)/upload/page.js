@@ -94,7 +94,7 @@ function Upload() {
       
       console.log("File info saved to Firestore with ID:", docId);
       
-      // Set the file ID and mark upload as completed
+   
       setFileDocId(docId);
       setUploadCompleted(true);
       
@@ -103,7 +103,7 @@ function Upload() {
     }
   };
 
-  // Redirect to file-preview when upload is complete
+  
   useEffect(() => {
     if (uploadCompleted && fileId) {
       setTimeout(() => {

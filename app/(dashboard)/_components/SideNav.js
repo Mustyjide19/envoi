@@ -17,7 +17,7 @@ export default function SideNav() {
             src="/logoicon.jpg"
             alt="Envoi"
             width={44}
-            height={44}
+            height={44}  
             className="rounded-md"
             priority
           />
