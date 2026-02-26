@@ -14,7 +14,7 @@ function FileInfo({ file }) {
 
   return (
     <div className="flex flex-col items-center p-8 border-2 border-blue-200 rounded-xl bg-white">
-      {/* File Preview */}
+      
       <div className="w-full max-w-md h-64 flex items-center justify-center bg-gray-50 rounded-lg mb-4 overflow-hidden">
         {isImage ? (
           <img
@@ -44,7 +44,7 @@ function FileInfo({ file }) {
         )}
       </div>
 
-      {/* File Details */}
+      
       <div className="text-center w-full">
         <h2 className="text-lg font-semibold text-gray-800 mb-1 truncate">
           {file.fileName}

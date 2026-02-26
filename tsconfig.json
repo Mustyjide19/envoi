@@ -30,7 +30,7 @@
     "**/*.mts",
     "**/*.ts",
     "**/*.tsx"
-  ],
+, "app/api/send/route.js"  ],
   "exclude": [
     "node_modules"
   ]

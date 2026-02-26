@@ -10,6 +10,8 @@
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
     "@prisma/client": "^6.0.0",
+    "@react-email/components": "^1.0.8",
+    "@react-email/render": "^2.0.4",
     "bcryptjs": "^3.0.3",
     "firebase": "^12.9.0",
     "lucide-react": "^0.563.0",
@@ -17,7 +19,8 @@
     "next-auth": "^5.0.0-beta.30",
     "prisma": "^6.0.0",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "resend": "^6.9.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
