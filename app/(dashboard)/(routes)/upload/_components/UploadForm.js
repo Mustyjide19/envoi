@@ -3,27 +3,7 @@ import React, { useRef, useState } from 'react';
 import { useSession } from "next-auth/react";
 import AlertMessage from './AlertMessage';
 import FilePreview from './FilePreview';
-
-const MAX_FILE_SIZE = 30 * 1024 * 1024;
-
-const ALLOWED_TYPES = [
-  // Documents
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-powerpoint',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'text/plain',
-  // Excel & CSV
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'text/csv',
-  // Images
-  'image/jpeg',
-  'image/png',
-  'image/jpg',
-  'image/webp',
-];
+import fileValidation from '../../../../../utils/fileValidation';
 
 function UploadForm({ uploadFile }) {
   const { data: session, status } = useSession();
@@ -49,17 +29,9 @@ function UploadForm({ uploadFile }) {
     setShowError(false);
     setAlertMsg('');
 
-    if (file.size > MAX_FILE_SIZE) {
-      setErrorMessage('File size exceeds the 30MB limit. Please choose a smaller file.');
-      setShowError(true);
-      setSelectedFile(null);
-      e.target.value = '';
-      setTimeout(() => setShowError(false), 4000);
-      return;
-    }
-
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      setErrorMessage('Invalid file type. Please upload: PDF, Word, PowerPoint, Excel, CSV, TXT, or Images (JPG, PNG, WEBP).');
+    const validationResult = fileValidation.validateUploadFile(file);
+    if (!validationResult.ok) {
+      setErrorMessage(validationResult.message);
       setShowError(true);
       setSelectedFile(null);
       e.target.value = '';
@@ -73,16 +45,9 @@ function UploadForm({ uploadFile }) {
   const handleUpload = async () => {
     if (!selectedFile || !uploadFile) return;
 
-    if (!ALLOWED_TYPES.includes(selectedFile.type)) {
-      setErrorMessage('Invalid file type detected. Upload cancelled.');
-      setShowError(true);
-      setSelectedFile(null);
-      setTimeout(() => setShowError(false), 4000);
-      return;
-    }
-
-    if (selectedFile.size > MAX_FILE_SIZE) {
-      setErrorMessage('File is too large. Upload cancelled.');
+    const validationResult = fileValidation.validateUploadFile(selectedFile);
+    if (!validationResult.ok) {
+      setErrorMessage(validationResult.message);
       setShowError(true);
       setSelectedFile(null);
       setTimeout(() => setShowError(false), 4000);
@@ -223,3 +188,4 @@ function UploadForm({ uploadFile }) {
 }
 
 export default UploadForm;
+

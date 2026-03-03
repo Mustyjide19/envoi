@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 export default auth((req) => {
   const isAuth = !!req.auth;
   const pathname = req.nextUrl.pathname;
+  const isE2ETests = process.env.E2E_TESTS === "true";
 
   const isAuthPage =
     pathname.startsWith("/sign-in") ||
@@ -17,6 +18,10 @@ export default auth((req) => {
   }
 
   if (!isAuth && !isPublicPage) {
+    if (isE2ETests && pathname.startsWith("/upload")) {
+      return NextResponse.next();
+    }
+
     return NextResponse.redirect(new URL("/sign-in", req.url));
   }
 

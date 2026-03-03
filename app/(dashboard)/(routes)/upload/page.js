@@ -12,6 +12,7 @@ import {
   getDownloadURL,
 } from "firebase/storage";
 import { generateRandomString } from "../../../_utils/GenerateRandomString";
+import fileValidation from "../../../../utils/fileValidation";
 
 function Upload() {
   const { data: session, status } = useSession();
@@ -23,29 +24,12 @@ function Upload() {
   const [progress, setProgress] = useState(0);
   const [uploadCompleted, setUploadCompleted] = useState(false);
 
-  const allowedTypes = [
-    "application/pdf",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/vnd.ms-powerpoint",
-    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    "text/plain",
-    "application/vnd.ms-excel",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "text/csv",
-    "image/jpeg",
-    "image/png",
-    "image/jpg",
-    "image/webp",
-  ];
-
   const uploadFile = (file) => {
     if (!file || status !== "authenticated") return;
-    
-    if (!allowedTypes.includes(file.type)) {
-      alert(
-        "Only academic files are allowed (PDF, DOC, PPT, TXT, Excel, CSV, Images)."
-      );
+
+    const validationResult = fileValidation.validateUploadFile(file);
+    if (!validationResult.ok) {
+      alert(validationResult.message);
       return;
     }
 
@@ -146,3 +130,4 @@ function Upload() {
 }
 
 export default Upload;
+
