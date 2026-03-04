@@ -13,7 +13,7 @@ describe("validateUploadFile", () => {
 
   test("blocks wrong extension", () => {
     const result = validateUploadFile({
-      name: "notes.pcap",
+      name: "notes.xyz",
       type: "application/pdf",
       size: 1024,
     });
@@ -39,7 +39,7 @@ describe("validateUploadFile", () => {
     });
   });
 
-  test("blocks suspicious executable files", () => {
+  test("blocks suspicious executable .exe files", () => {
     const result = validateUploadFile({
       name: "installer.exe",
       type: "application/x-msdownload",
@@ -53,10 +53,54 @@ describe("validateUploadFile", () => {
     });
   });
 
-  test("accepts uppercase extension", () => {
+  test("blocks suspicious executable .bat files", () => {
     const result = validateUploadFile({
-      name: "THESIS.PDF",
-      type: "application/pdf",
+      name: "runme.bat",
+      type: "text/plain",
+      size: 1024,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      reason: "SUSPICIOUS_FILE",
+      message: "Executable or suspicious files are not allowed.",
+    });
+  });
+
+  test("allows new .py extension", () => {
+    const result = validateUploadFile({
+      name: "script.py",
+      type: "text/plain",
+      size: 1024,
+    });
+
+    expect(result).toEqual({ ok: true });
+  });
+
+  test("allows new .sql extension", () => {
+    const result = validateUploadFile({
+      name: "schema.sql",
+      type: "text/plain",
+      size: 1024,
+    });
+
+    expect(result).toEqual({ ok: true });
+  });
+
+  test("allows new .pcap extension with octet-stream", () => {
+    const result = validateUploadFile({
+      name: "capture.pcap",
+      type: "application/octet-stream",
+      size: 1024,
+    });
+
+    expect(result).toEqual({ ok: true });
+  });
+
+  test("accepts uppercase extension for new type", () => {
+    const result = validateUploadFile({
+      name: "TEST.PY",
+      type: "text/plain",
       size: 1024,
     });
 
