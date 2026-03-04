@@ -32,7 +32,14 @@ function TopHeader({ onMenuClick }) {
 
       {session && (
         <div className="flex items-center gap-3">
-          <span className="text-sm">{session.user?.name}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm">{session.user?.name}</span>
+            {session.user?.isVerified && (
+              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                Verified
+              </span>
+            )}
+          </div>
           <button
             onClick={() => signOut()}
             className="px-3 py-1 text-sm bg-black text-white rounded-md"

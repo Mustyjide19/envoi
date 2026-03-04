@@ -36,6 +36,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           name: user.name,
           image: user.image,
+          isVerified: user.isVerified,
         }
       },
     }),
@@ -48,6 +49,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   session: {
     strategy: "jwt",
+  },
+
+  callbacks: {
+    async jwt({ token, user }) {
+      if (typeof user?.isVerified === "boolean") {
+        token.isVerified = user.isVerified
+      } else if (token.email) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: token.email },
+          select: { isVerified: true },
+        })
+        token.isVerified = dbUser?.isVerified ?? false
+      } else {
+        token.isVerified = false
+      }
+
+      return token
+    },
+    async session({ session, token }) {
+      if (session?.user) {
+        session.user.isVerified = !!token.isVerified
+      }
+      return session
+    },
   },
 
   secret: process.env.NEXTAUTH_SECRET,

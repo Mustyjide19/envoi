@@ -13,6 +13,7 @@ model User {
   email         String    @unique
   name          String?
   password      String?
+  isVerified    Boolean   @default(false)
   emailVerified DateTime?
   image         String?
   accounts      Account[]

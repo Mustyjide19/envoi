@@ -71,6 +71,7 @@ function Upload() {
         fileURL: downloadURL,
         userEmail: session?.user?.email || "",
         userName: session?.user?.name || "",
+        userVerified: !!session?.user?.isVerified,
         password: "",
         id: docId,
         shortUrl: process.env.NEXT_PUBLIC_BASE_URL + docId,

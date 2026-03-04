@@ -137,7 +137,7 @@ function UploadForm({ uploadFile }) {
               </p>
 
               <p className="text-sm mb-2 text-blue-700 text-center">
-                Accepted: PDF, Word, PowerPoint, Excel, CSV, TXT, Images
+                Accepted: Documents, spreadsheets, images, code files, and PCAP
               </p>
 
               <p className="text-base mb-5 text-blue-700">
@@ -162,7 +162,6 @@ function UploadForm({ uploadFile }) {
           className="hidden"
           onChange={handleFileChange}
           disabled={isUploading}
-          accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp"
         />
 
         <FilePreview
