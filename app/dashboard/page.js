@@ -94,7 +94,14 @@ export default function Dashboard() {
           </button>
           
           <div className="flex items-center gap-4">
-            <span className="text-gray-700 font-medium">{session.user.name}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-gray-700 font-medium">{session.user.name}</span>
+              {session.user?.isVerified && (
+                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                  Verified
+                </span>
+              )}
+            </div>
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
               className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
