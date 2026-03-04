@@ -27,7 +27,7 @@ test("blocks wrong extension in upload UI", async ({ page }) => {
   await openUpload(page);
 
   await page.locator('input[type="file"]').setInputFiles({
-    name: "notes.pcap",
+    name: "notes.xyz",
     mimeType: "application/pdf",
     buffer: Buffer.from("fake content"),
   });

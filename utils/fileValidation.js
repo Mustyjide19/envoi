@@ -14,22 +14,37 @@ const ALLOWED_EXTENSIONS = new Set([
   ".jpeg",
   ".png",
   ".webp",
+  ".py",
+  ".java",
+  ".html",
+  ".css",
+  ".js",
+  ".sql",
+  ".pcap",
 ]);
 
-const ALLOWED_MIME_TYPES = new Set([
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.ms-powerpoint",
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-  "text/plain",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "text/csv",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-]);
+const ALLOWED_MIME_BY_EXTENSION = {
+  ".pdf": new Set(["application/pdf"]),
+  ".doc": new Set(["application/msword"]),
+  ".docx": new Set(["application/vnd.openxmlformats-officedocument.wordprocessingml.document"]),
+  ".ppt": new Set(["application/vnd.ms-powerpoint"]),
+  ".pptx": new Set(["application/vnd.openxmlformats-officedocument.presentationml.presentation"]),
+  ".txt": new Set(["text/plain"]),
+  ".xls": new Set(["application/vnd.ms-excel"]),
+  ".xlsx": new Set(["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]),
+  ".csv": new Set(["text/csv", "application/csv", "text/plain"]),
+  ".jpg": new Set(["image/jpeg"]),
+  ".jpeg": new Set(["image/jpeg"]),
+  ".png": new Set(["image/png"]),
+  ".webp": new Set(["image/webp"]),
+  // Browsers and OS file pickers commonly report text/plain for source files.
+  ".py": new Set(["text/plain", "text/x-python", "application/x-python-code"]),
+  ".java": new Set(["text/plain", "text/x-java-source", "text/x-java"]),
+  ".html": new Set(["text/plain", "text/html"]),
+  ".css": new Set(["text/plain", "text/css"]),
+  ".js": new Set(["text/plain", "application/javascript", "text/javascript"]),
+  ".sql": new Set(["text/plain", "application/sql"]),
+};
 
 const SUSPICIOUS_EXTENSIONS = new Set([
   ".exe",
@@ -87,7 +102,15 @@ function validateUploadFile(file) {
     return fail("INVALID_EXTENSION", "This file extension is not allowed.");
   }
 
-  if (!mimeType || !ALLOWED_MIME_TYPES.has(mimeType)) {
+  // Packet captures often come through as octet-stream or vendor-specific values.
+  if (extension === ".pcap") {
+    if (!mimeType || mimeType === "application/octet-stream" || mimeType === "application/vnd.tcpdump.pcap" || mimeType === "application/x-pcap") {
+      return { ok: true };
+    }
+  }
+
+  const allowedMimeTypes = ALLOWED_MIME_BY_EXTENSION[extension];
+  if (!mimeType || !allowedMimeTypes || !allowedMimeTypes.has(mimeType)) {
     return fail("INVALID_MIME", "This file type is not allowed.");
   }
 
