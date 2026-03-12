@@ -9,6 +9,7 @@ import { app } from "../../firebaseConfig";
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [isGeneratingVerification, setIsGeneratingVerification] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [stats, setStats] = useState({
     totalFiles: 0,
@@ -65,6 +66,27 @@ export default function Dashboard() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
+  const handleVerifyAccount = async () => {
+    setIsGeneratingVerification(true);
+    try {
+      const response = await fetch("/api/auth/verify/regenerate", {
+        method: "POST",
+      });
+      const data = await response.json();
+
+      if (!response.ok || !data?.verificationToken) {
+        alert(data?.error || "Unable to start verification.");
+        return;
+      }
+
+      router.push(`/verify?token=${encodeURIComponent(data.verificationToken)}`);
+    } catch {
+      alert("Unable to start verification.");
+    } finally {
+      setIsGeneratingVerification(false);
+    }
+  };
+
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -113,6 +135,23 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {!session.user?.isVerified && (
+          <div className="mb-6 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="font-semibold text-amber-900">Your account is not verified yet.</p>
+              <p className="text-sm text-amber-800">Verify your account before sharing files.</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleVerifyAccount}
+              disabled={isGeneratingVerification}
+              className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+            >
+              {isGeneratingVerification ? "Preparing..." : "Verify account"}
+            </button>
+          </div>
+        )}
+
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
             Welcome back, {session.user.name?.split(' ')[0]}! 👋
