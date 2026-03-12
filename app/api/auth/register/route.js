@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import verificationTokenUtils from "../../../../utils/verificationToken";
 
 const prisma = new PrismaClient();
 
@@ -30,6 +31,8 @@ export async function POST(request) {
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
+    const { rawToken, verificationTokenHash, verificationTokenExpiresAt } =
+      verificationTokenUtils.createVerificationTokenRecord();
 
     // Create user
     const user = await prisma.user.create({
@@ -37,6 +40,9 @@ export async function POST(request) {
         name,
         email,
         password: hashedPassword,
+        isVerified: false,
+        verificationTokenHash,
+        verificationTokenExpiresAt,
       },
     });
 
@@ -47,7 +53,8 @@ export async function POST(request) {
           id: user.id,
           name: user.name,
           email: user.email,
-        }
+        },
+        verificationToken: rawToken,
       },
       { status: 201 }
     );

@@ -84,7 +84,14 @@ export default function SignUpPage() {
         return;
       }
 
-      router.push("/dashboard");
+      if (!data?.verificationToken) {
+        setErrors({ submit: "Verification setup failed. Please try again." });
+        setIsLoading(false);
+        return;
+      }
+
+      const verificationToken = encodeURIComponent(data.verificationToken);
+      router.push(`/verify?token=${verificationToken}`);
     } catch (error) {
       setErrors({ submit: "An unexpected error occurred" });
       setIsLoading(false);

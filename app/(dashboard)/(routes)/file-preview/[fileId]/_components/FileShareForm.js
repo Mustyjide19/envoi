@@ -6,6 +6,7 @@ import { app } from '../../../../../../firebaseConfig';
 
 function FileShareForm({ file, onPasswordSave }) {
   const { data: session } = useSession();
+  const isVerified = !!session?.user?.isVerified;
   const [enablePassword, setEnablePassword] = useState(false);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -16,6 +17,10 @@ function FileShareForm({ file, onPasswordSave }) {
 
   const handleSavePassword = async () => {
     if (!file?.id) return;
+    if (!isVerified) {
+      alert("You must verify your account before sharing files.");
+      return;
+    }
     
     setIsSaving(true);
     try {
@@ -35,6 +40,11 @@ function FileShareForm({ file, onPasswordSave }) {
   };
 
   const handleSendEmail = async () => {
+    if (!isVerified) {
+      alert("You must verify your account before sharing files.");
+      return;
+    }
+
     if (!email) {
       alert('Please enter an email address');
       return;
@@ -72,6 +82,11 @@ function FileShareForm({ file, onPasswordSave }) {
   };
 
   const copyToClipboard = () => {
+    if (!isVerified) {
+      alert("You must verify your account before sharing files.");
+      return;
+    }
+
     if (file?.shortUrl) {
       navigator.clipboard.writeText(file.shortUrl);
       alert('Link copied to clipboard!');
@@ -80,6 +95,12 @@ function FileShareForm({ file, onPasswordSave }) {
 
   return (
     <div className="flex flex-col gap-4 p-8 border-2 border-blue-200 rounded-xl bg-white">
+      {!isVerified && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          You must verify your account before sharing files.
+        </div>
+      )}
+
       <div>
         <label className="text-sm font-semibold text-gray-700 mb-2 block">
           Short URL
@@ -93,7 +114,8 @@ function FileShareForm({ file, onPasswordSave }) {
           />
           <button
             onClick={copyToClipboard}
-            className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+            disabled={!isVerified}
+            className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
             title="Copy to clipboard"
           >
             <svg
@@ -119,6 +141,7 @@ function FileShareForm({ file, onPasswordSave }) {
           id="enablePassword"
           checked={enablePassword}
           onChange={(e) => setEnablePassword(e.target.checked)}
+          disabled={!isVerified}
           className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
         />
         <label htmlFor="enablePassword" className="font-semibold text-gray-700">
@@ -133,6 +156,7 @@ function FileShareForm({ file, onPasswordSave }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter password"
+            disabled={!isVerified}
             className="w-full px-4 py-3 pr-12 bg-gray-50 border border-gray-200 rounded-lg text-gray-700"
           />
           <button
@@ -156,7 +180,7 @@ function FileShareForm({ file, onPasswordSave }) {
 
       <button
         onClick={handleSavePassword}
-        disabled={isSaving || (enablePassword && !password)}
+        disabled={!isVerified || isSaving || (enablePassword && !password)}
         className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isSaving ? 'Saving...' : 'Save'}
@@ -171,11 +195,12 @@ function FileShareForm({ file, onPasswordSave }) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="example@gmail.com"
+          disabled={!isVerified}
           className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 mb-3"
         />
         <button
           onClick={handleSendEmail}
-          disabled={isSendingEmail || !email}
+          disabled={!isVerified || isSendingEmail || !email}
           className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSendingEmail ? 'Sending...' : 'Send Email'}
