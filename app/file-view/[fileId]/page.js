@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
-import { app } from "../../../firebaseConfig";
 
 export default function FileViewPage({ params }) {
   const router = useRouter();
@@ -13,7 +11,6 @@ export default function FileViewPage({ params }) {
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [isUnlocked, setIsUnlocked] = useState(false);
-  const db = getFirestore(app);
 
   useEffect(() => {
     params.then((resolvedParams) => {
@@ -23,20 +20,19 @@ export default function FileViewPage({ params }) {
 
   useEffect(() => {
     if (fileId) {
-      fetchFile();
+      void fetchFile();
     }
   }, [fileId]);
 
   const fetchFile = async () => {
     setIsLoading(true);
     try {
-      const docRef = doc(db, "uploadedFiles", fileId);
-      const docSnap = await getDoc(docRef);
+      const response = await fetch(`/api/public-files/${fileId}`, { cache: "no-store" });
 
-      if (docSnap.exists()) {
-        const fileData = docSnap.data();
+      if (response.ok) {
+        const fileData = await response.json();
         setFile(fileData);
-        
+
         if (!fileData.password) {
           setIsUnlocked(true);
         }
@@ -65,7 +61,7 @@ export default function FileViewPage({ params }) {
   };
 
   const handleDownload = () => {
-    window.open(file.fileURL, '_blank');
+    window.open(file.fileURL, "_blank");
   };
 
   if (isLoading) {
@@ -105,7 +101,7 @@ export default function FileViewPage({ params }) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">🔒 Password Protected</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Password Protected</h2>
             <p className="text-gray-600">This file is password protected. Enter the password to access it.</p>
           </div>
 
@@ -147,7 +143,7 @@ export default function FileViewPage({ params }) {
     );
   }
 
-  const isImage = file.fileType?.startsWith('image/');
+  const isImage = file.fileType?.startsWith("image/");
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
@@ -178,7 +174,6 @@ export default function FileViewPage({ params }) {
                 </h2>
                 <div className="flex items-center gap-4 text-sm text-gray-600">
                   <span>{file.fileType}</span>
-                  <span>•</span>
                   <span>{(file.fileSize / 1024).toFixed(2)} KB</span>
                 </div>
               </div>

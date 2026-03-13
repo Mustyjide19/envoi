@@ -53,15 +53,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   callbacks: {
     async jwt({ token, user }) {
+      if (user?.id) {
+        token.userId = user.id
+      }
+
       if (typeof user?.isVerified === "boolean") {
         token.isVerified = user.isVerified
       } else if (token.email) {
         const dbUser = await prisma.user.findUnique({
           where: { email: token.email },
-          select: { isVerified: true },
+          select: { id: true, isVerified: true },
         })
+        token.userId = dbUser?.id
         token.isVerified = dbUser?.isVerified ?? false
       } else {
+        token.userId = undefined
         token.isVerified = false
       }
 
@@ -69,6 +75,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async session({ session, token }) {
       if (session?.user) {
+        session.user.id = token.userId
         session.user.isVerified = !!token.isVerified
       }
       return session

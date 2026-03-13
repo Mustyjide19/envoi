@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import UploadForm from "./_components/UploadForm";
 import { app } from "../../../../firebaseConfig";
-import { getFirestore, doc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import {
   getStorage,
@@ -15,11 +14,10 @@ import { generateRandomString } from "../../../_utils/GenerateRandomString";
 import fileValidation from "../../../../utils/fileValidation";
 
 function Upload() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const storage = getStorage(app);
-  const db = getFirestore(app);
   const router = useRouter();
-  
+
   const [fileId, setFileDocId] = useState();
   const [progress, setProgress] = useState(0);
   const [uploadCompleted, setUploadCompleted] = useState(false);
@@ -48,7 +46,6 @@ function Upload() {
         const uploadProgress =
           (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         setProgress(uploadProgress);
-        console.log("Upload is " + uploadProgress + "% done");
       },
       (error) => {
         console.error("Upload failed:", error);
@@ -62,33 +59,35 @@ function Upload() {
 
   const saveInfo = async (fileName, file, downloadURL) => {
     const docId = generateRandomString().toString();
-    
+
     try {
-      await setDoc(doc(db, "uploadedFiles", docId), {
-        fileName: fileName,
-        fileType: file.type,
-        fileSize: file.size,
-        fileURL: downloadURL,
-        userEmail: session?.user?.email || "",
-        userName: session?.user?.name || "",
-        userVerified: !!session?.user?.isVerified,
-        password: "",
-        id: docId,
-        shortUrl: process.env.NEXT_PUBLIC_BASE_URL + docId,
+      const response = await fetch("/api/files", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: docId,
+          fileName,
+          fileType: file.type,
+          fileSize: file.size,
+          fileURL: downloadURL,
+          shortUrl: `${process.env.NEXT_PUBLIC_BASE_URL || ""}${docId}`,
+        }),
       });
-      
-      console.log("File info saved to Firestore with ID:", docId);
-      
-   
-      setFileDocId(docId);
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to save file metadata.");
+      }
+
+      setFileDocId(data.id || docId);
       setUploadCompleted(true);
-      
     } catch (error) {
-      console.error("Error saving to Firestore:", error);
+      console.error("Error saving file metadata:", error);
     }
   };
 
-  
   useEffect(() => {
     if (uploadCompleted && fileId) {
       setTimeout(() => {
@@ -104,7 +103,7 @@ function Upload() {
         Start <strong className="text-blue-900">Uploading</strong> Files and{" "}
         <strong className="text-blue-900">Share</strong> it
       </h2>
-      
+
       {progress > 0 && progress < 100 && (
         <div className="mb-4">
           <div className="w-full bg-gray-200 rounded-full h-2.5">
@@ -118,17 +117,16 @@ function Upload() {
           </p>
         </div>
       )}
-      
+
       {uploadCompleted && (
         <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
-          ✅ Upload successful! Redirecting to file preview...
+          Upload successful! Redirecting to file preview...
         </div>
       )}
-      
+
       <UploadForm uploadFile={uploadFile} />
     </div>
   );
 }
 
 export default Upload;
-

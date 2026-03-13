@@ -3,8 +3,6 @@
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getFirestore, collection, query, where, getDocs, orderBy } from "firebase/firestore";
-import { app } from "../../firebaseConfig";
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -16,8 +14,6 @@ export default function Dashboard() {
     totalSize: 0,
     sharedFiles: 0,
   });
-  const db = getFirestore(app);
-
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/sign-in");
@@ -32,19 +28,18 @@ export default function Dashboard() {
 
   const fetchUserFiles = async () => {
     try {
-      const q = query(
-        collection(db, "uploadedFiles"),
-        where("userEmail", "==", session.user.email),
-        orderBy("id", "desc")
-      );
-      const querySnapshot = await getDocs(q);
-      const files = [];
+      const response = await fetch("/api/files", { cache: "no-store" });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to load files");
+      }
+
+      const files = data.files || [];
       let totalSize = 0;
       let sharedCount = 0;
 
-      querySnapshot.forEach((doc) => {
-        const fileData = doc.data();
-        files.push(fileData);
+      files.forEach((fileData) => {
         totalSize += fileData.fileSize || 0;
         if (fileData.password) sharedCount++;
       });

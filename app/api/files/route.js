@@ -1,0 +1,149 @@
+import { NextResponse } from "next/server";
+import { FieldPath } from "firebase-admin/firestore";
+import { auth } from "../../../auth";
+import { getAdminDb } from "../../../firebaseAdmin";
+
+export const runtime = "nodejs";
+
+function sortNewestFirst(items, fieldName) {
+  return [...items].sort((a, b) => {
+    const left = new Date(a[fieldName] || 0).getTime();
+    const right = new Date(b[fieldName] || 0).getTime();
+    return right - left;
+  });
+}
+
+export async function GET() {
+  try {
+    const adminDb = getAdminDb();
+    const session = await auth();
+
+    if (!session?.user?.email || !session?.user?.id) {
+      return NextResponse.json(
+        { error: "Authentication required." },
+        { status: 401 }
+      );
+    }
+
+    const ownedSnapshot = await adminDb
+      .collection("uploadedFiles")
+      .where("userEmail", "==", session.user.email)
+      .get();
+
+    const ownedFiles = ownedSnapshot.docs
+      .map((doc) => doc.data())
+      .sort((a, b) => String(b.id || "").localeCompare(String(a.id || "")));
+
+    const sharedSnapshots = await Promise.all([
+      adminDb
+        .collection("sharedFiles")
+        .where("recipientUserId", "==", session.user.id)
+        .get(),
+      adminDb
+        .collection("sharedFiles")
+        .where("recipientEmail", "==", session.user.email)
+        .get(),
+    ]);
+
+    const shareMap = new Map();
+    sharedSnapshots.forEach((snapshot) => {
+      snapshot.docs.forEach((doc) => {
+        shareMap.set(doc.id, doc.data());
+      });
+    });
+
+    const shareRecords = Array.from(shareMap.values());
+    const fileIds = [...new Set(shareRecords.map((share) => share.fileId).filter(Boolean))];
+    const fileMap = new Map();
+
+    if (fileIds.length > 0) {
+      for (let index = 0; index < fileIds.length; index += 10) {
+        const chunk = fileIds.slice(index, index + 10);
+        const snapshot = await adminDb
+          .collection("uploadedFiles")
+          .where(FieldPath.documentId(), "in", chunk)
+          .get();
+
+        snapshot.docs.forEach((doc) => {
+          fileMap.set(doc.id, doc.data());
+        });
+      }
+    }
+
+    const sharedFiles = sortNewestFirst(
+      shareRecords
+        .map((share) => {
+          const file = fileMap.get(share.fileId);
+          if (!file) {
+            return null;
+          }
+
+          return {
+            shareId: share.id,
+            ownerEmail: share.ownerEmail,
+            ownerName: share.ownerName,
+            sharedAt: share.sharedAt,
+            ...file,
+          };
+        })
+        .filter(Boolean),
+      "sharedAt"
+    );
+
+    return NextResponse.json({
+      files: ownedFiles,
+      sharedFiles,
+    });
+  } catch (error) {
+    console.error("GET /api/files failed:", error);
+    return NextResponse.json(
+      { error: "Failed to load files." },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request) {
+  try {
+    const adminDb = getAdminDb();
+    const session = await auth();
+
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: "Authentication required." },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { id, fileName, fileType, fileSize, fileURL, shortUrl } = body || {};
+
+    if (!id || !fileName || !fileURL) {
+      return NextResponse.json(
+        { error: "Missing required file metadata." },
+        { status: 400 }
+      );
+    }
+
+    await adminDb.collection("uploadedFiles").doc(id).set({
+      id,
+      fileName,
+      fileType: fileType || "",
+      fileSize: Number(fileSize) || 0,
+      fileURL,
+      userEmail: session.user.email,
+      userName: session.user.name || "",
+      userVerified: !!session.user.isVerified,
+      password: "",
+      shortUrl: shortUrl || `${process.env.NEXT_PUBLIC_BASE_URL || ""}${id}`,
+    });
+
+    return NextResponse.json({ ok: true, id });
+  } catch (error) {
+    console.error("POST /api/files failed:", error);
+    return NextResponse.json(
+      { error: "Failed to save file metadata." },
+      { status: 500 }
+    );
+  }
+}

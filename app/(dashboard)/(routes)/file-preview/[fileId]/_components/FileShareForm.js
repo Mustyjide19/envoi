@@ -1,19 +1,20 @@
 "use client";
-import React, { useState } from 'react';
-import { getFirestore, doc, updateDoc } from 'firebase/firestore';
-import { useSession } from 'next-auth/react';
-import { app } from '../../../../../../firebaseConfig';
+import React, { useState } from "react";
+import { useSession } from "next-auth/react";
 
 function FileShareForm({ file, onPasswordSave }) {
   const { data: session } = useSession();
   const isVerified = !!session?.user?.isVerified;
   const [enablePassword, setEnablePassword] = useState(false);
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
+  const [directShareEmail, setDirectShareEmail] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
-  const db = getFirestore(app);
+  const [isDirectSharing, setIsDirectSharing] = useState(false);
+  const [directShareMessage, setDirectShareMessage] = useState("");
+  const [directShareError, setDirectShareError] = useState("");
 
   const handleSavePassword = async () => {
     if (!file?.id) return;
@@ -21,19 +22,29 @@ function FileShareForm({ file, onPasswordSave }) {
       alert("You must verify your account before sharing files.");
       return;
     }
-    
+
     setIsSaving(true);
     try {
-      const docRef = doc(db, 'uploadedFiles', file.id);
-      await updateDoc(docRef, {
-        password: enablePassword ? password : ''
+      const response = await fetch(`/api/files/${file.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          password: enablePassword ? password : "",
+        }),
       });
-      
-      alert('Password settings saved successfully!');
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to save password settings");
+      }
+
+      alert("Password settings saved successfully!");
       if (onPasswordSave) onPasswordSave();
     } catch (error) {
-      console.error('Error saving password:', error);
-      alert('Failed to save password settings');
+      console.error("Error saving password:", error);
+      alert(error.message || "Failed to save password settings");
     } finally {
       setIsSaving(false);
     }
@@ -46,21 +57,21 @@ function FileShareForm({ file, onPasswordSave }) {
     }
 
     if (!email) {
-      alert('Please enter an email address');
+      alert("Please enter an email address");
       return;
     }
 
     setIsSendingEmail(true);
     try {
-      const response = await fetch('/api/send', {
-        method: 'POST',
+      const response = await fetch("/api/send", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           recipientEmail: email,
-          senderName: session?.user?.name || 'A student',
-          fileName: file?.fileName || 'Shared file',
+          senderName: session?.user?.name || "A student",
+          fileName: file?.fileName || "Shared file",
           fileId: file?.id,
         }),
       });
@@ -68,14 +79,14 @@ function FileShareForm({ file, onPasswordSave }) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to send email');
+        throw new Error(data.error || "Failed to send email");
       }
 
       alert(`Email sent successfully to ${email}!`);
-      setEmail('');
+      setEmail("");
     } catch (error) {
-      console.error('Error sending email:', error);
-      alert('Failed to send email: ' + error.message);
+      console.error("Error sending email:", error);
+      alert("Failed to send email: " + error.message);
     } finally {
       setIsSendingEmail(false);
     }
@@ -89,7 +100,52 @@ function FileShareForm({ file, onPasswordSave }) {
 
     if (file?.shortUrl) {
       navigator.clipboard.writeText(file.shortUrl);
-      alert('Link copied to clipboard!');
+      alert("Link copied to clipboard!");
+    }
+  };
+
+  const handleDirectShare = async () => {
+    if (!isVerified) {
+      setDirectShareError("You must verify your account before sharing files.");
+      setDirectShareMessage("");
+      return;
+    }
+
+    if (!directShareEmail) {
+      setDirectShareError("Recipient email is required.");
+      setDirectShareMessage("");
+      return;
+    }
+
+    setIsDirectSharing(true);
+    setDirectShareError("");
+    setDirectShareMessage("");
+
+    try {
+      const response = await fetch("/api/share", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fileId: file?.id,
+          recipientEmail: directShareEmail,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setDirectShareError(data.error || "Failed to share file.");
+        return;
+      }
+
+      setDirectShareMessage(data.message || "File shared successfully.");
+      setDirectShareEmail("");
+    } catch {
+      setDirectShareError("Failed to share file.");
+    } finally {
+      setIsDirectSharing(false);
     }
   };
 
@@ -101,6 +157,33 @@ function FileShareForm({ file, onPasswordSave }) {
         </div>
       )}
 
+      <div className="mt-1">
+        <label className="text-sm font-semibold text-gray-700 mb-2 block">
+          Share with Registered User
+        </label>
+        <input
+          type="email"
+          value={directShareEmail}
+          onChange={(e) => setDirectShareEmail(e.target.value)}
+          placeholder="registered.user@example.com"
+          disabled={!isVerified || isDirectSharing}
+          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 mb-3"
+        />
+        <button
+          onClick={handleDirectShare}
+          disabled={!isVerified || isDirectSharing || !directShareEmail}
+          className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isDirectSharing ? "Sharing..." : "Share Inside App"}
+        </button>
+        {directShareMessage && (
+          <p className="mt-3 text-sm text-green-700">{directShareMessage}</p>
+        )}
+        {directShareError && (
+          <p className="mt-3 text-sm text-red-600">{directShareError}</p>
+        )}
+      </div>
+
       <div>
         <label className="text-sm font-semibold text-gray-700 mb-2 block">
           Short URL
@@ -108,7 +191,7 @@ function FileShareForm({ file, onPasswordSave }) {
         <div className="flex items-center gap-2">
           <input
             type="text"
-            value={file?.shortUrl || ''}
+            value={file?.shortUrl || ""}
             readOnly
             className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 text-sm"
           />
@@ -183,7 +266,7 @@ function FileShareForm({ file, onPasswordSave }) {
         disabled={!isVerified || isSaving || (enablePassword && !password)}
         className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isSaving ? 'Saving...' : 'Save'}
+        {isSaving ? "Saving..." : "Save"}
       </button>
 
       <div className="mt-4">
@@ -203,7 +286,7 @@ function FileShareForm({ file, onPasswordSave }) {
           disabled={!isVerified || isSendingEmail || !email}
           className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isSendingEmail ? 'Sending...' : 'Send Email'}
+          {isSendingEmail ? "Sending..." : "Send Email"}
         </button>
       </div>
     </div>
