@@ -101,6 +101,30 @@ export default function FilesPage() {
     });
   };
 
+  const formatFileSize = (bytes) => {
+    if (!bytes) return "0 KB";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  };
+
+  const getFileTypeBadge = (file) => {
+    const extension = String(file.fileName || "")
+      .split(".")
+      .pop()
+      .toUpperCase();
+
+    if (extension && extension !== String(file.fileName || "").toUpperCase()) {
+      return extension;
+    }
+
+    if (file.fileType?.includes("/")) {
+      return file.fileType.split("/").pop().toUpperCase();
+    }
+
+    return "FILE";
+  };
+
   if (status === "loading" || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -209,101 +233,112 @@ export default function FilesPage() {
             </div>
           )
         ) : (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      File Name
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {visibleFiles.map((file) => (
+              <article
+                key={activeTab === "owned" ? file.id : file.shareId}
+                className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              >
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-blue-100">
+                      <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-base font-semibold text-gray-900">
+                        {file.fileName}
+                      </p>
+                      <p className="truncate text-sm text-gray-500">
+                        {file.fileType || "Unknown type"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
+                    {getFileTypeBadge(file)}
+                  </span>
+                </div>
+
+                <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-lg bg-gray-50 px-3 py-2">
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
                       Size
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Date
-                    </th>
-                    {activeTab === "shared" && (
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        Shared By
-                      </th>
-                    )}
-                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {visibleFiles.map((file) => (
-                    <tr key={file.id} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                            </svg>
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="font-medium text-gray-900 truncate max-w-md">
-                              {file.fileName}
-                            </p>
-                            <p className="text-sm text-gray-500">{file.fileType}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {(file.fileSize / 1024).toFixed(2)} KB
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {formatDate(activeTab === "owned" ? file.fileName : file.sharedAt)}
-                      </td>
-                      {activeTab === "shared" && (
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {file.ownerName || file.ownerEmail}
-                        </td>
-                      )}
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          {activeTab === "owned" ? (
-                            <button
-                              onClick={() => router.push(`/file-preview/${file.id}`)}
-                              className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                              title="Share"
-                            >
-                              Share
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => router.push(`/shared-files/${file.shareId}`)}
-                              className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                            >
-                              View
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDownload(file)}
-                            className="px-3 py-1.5 text-sm font-medium text-green-600 hover:bg-green-50 rounded-lg transition"
-                            title="Download"
-                          >
-                            Download
-                          </button>
-                          {activeTab === "owned" && (
-                            <button
-                              onClick={() => handleDelete(file)}
-                              disabled={deletingId === file.id}
-                              className="px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
-                              title="Delete"
-                            >
-                              {deletingId === file.id ? "Deleting..." : "Delete"}
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                    </p>
+                    <p className="mt-1 font-semibold text-gray-900">
+                      {formatFileSize(file.fileSize)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-gray-50 px-3 py-2">
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                      {activeTab === "owned" ? "Uploaded" : "Shared"}
+                    </p>
+                    <p className="mt-1 font-semibold text-gray-900">
+                      {formatDate(activeTab === "owned" ? file.fileName : file.sharedAt)}
+                    </p>
+                  </div>
+                </div>
+
+                {activeTab === "shared" && (
+                  <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2">
+                    <p className="text-xs font-medium uppercase tracking-wide text-blue-700">
+                      Owner
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-blue-900">
+                      {file.ownerName || file.ownerEmail}
+                    </p>
+                  </div>
+                )}
+
+                <div className="mb-4 flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-600">
+                    {activeTab === "owned" ? "Owned file" : "Shared file"}
+                  </span>
+                  {activeTab === "shared" && (
+                    <span className="rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-600">
+                      Read-only access
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-2 border-t border-gray-100 pt-4">
+                  {activeTab === "owned" ? (
+                    <button
+                      onClick={() => router.push(`/file-preview/${file.id}`)}
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                      title="Share"
+                    >
+                      Share
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => router.push(`/shared-files/${file.shareId}`)}
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                    >
+                      View
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDownload(file)}
+                    className="rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-100"
+                    title="Download"
+                  >
+                    Download
+                  </button>
+                  {activeTab === "owned" && (
+                    <button
+                      onClick={() => handleDelete(file)}
+                      disabled={deletingId === file.id}
+                      className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
+                      title="Delete"
+                    >
+                      {deletingId === file.id ? "Deleting..." : "Delete"}
+                    </button>
+                  )}
+                </div>
+              </article>
+            ))}
           </div>
         )}
       </main>
