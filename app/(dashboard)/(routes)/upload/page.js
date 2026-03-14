@@ -22,7 +22,21 @@ function Upload() {
   const [progress, setProgress] = useState(0);
   const [uploadCompleted, setUploadCompleted] = useState(false);
 
-  const uploadFile = async (file, description = "") => {
+  const normalizeTags = (rawTags = "") => {
+    if (typeof rawTags !== "string") {
+      return [];
+    }
+
+    const cleanedTags = rawTags
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+      .slice(0, 5);
+
+    return [...new Set(cleanedTags)];
+  };
+
+  const uploadFile = async (file, description = "", rawTags = "") => {
     if (!file || status !== "authenticated") return;
 
     const validationResult = fileValidation.validateUploadFile(file);
@@ -52,12 +66,12 @@ function Upload() {
       },
       async () => {
         const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-        await saveInfo(fileName, file, downloadURL, description);
+        await saveInfo(fileName, file, downloadURL, description, normalizeTags(rawTags));
       }
     );
   };
 
-  const saveInfo = async (fileName, file, downloadURL, description = "") => {
+  const saveInfo = async (fileName, file, downloadURL, description = "", tags = []) => {
     const docId = generateRandomString().toString();
 
     try {
@@ -73,6 +87,7 @@ function Upload() {
           fileSize: file.size,
           fileURL: downloadURL,
           description,
+          tags,
           shortUrl: `${process.env.NEXT_PUBLIC_BASE_URL || ""}${docId}`,
         }),
       });

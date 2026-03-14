@@ -295,6 +295,24 @@ export default function FilesPage() {
                   </div>
                 )}
 
+                {Array.isArray(file.tags) && file.tags.length > 0 && (
+                  <div className="mb-4">
+                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+                      Tags
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {file.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {activeTab === "shared" && (
                   <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2">
                     <p className="text-xs font-medium uppercase tracking-wide text-blue-700">

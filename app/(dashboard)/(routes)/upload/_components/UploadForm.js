@@ -12,6 +12,7 @@ function UploadForm({ uploadFile }) {
   const fileInputRef = useRef(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [description, setDescription] = useState('');
+  const [tags, setTags] = useState('');
   const [alertMsg, setAlertMsg] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -61,12 +62,13 @@ function UploadForm({ uploadFile }) {
     setShowError(false);
 
     try {
-      await uploadFile(selectedFile, description.trim());
+      await uploadFile(selectedFile, description.trim(), tags);
 
       setIsUploading(false);
       setShowSuccess(true);
       setSelectedFile(null);
       setDescription('');
+      setTags('');
       setAlertMsg('');
 
       if (fileInputRef.current) {
@@ -190,6 +192,27 @@ function UploadForm({ uploadFile }) {
           />
           <p className="mt-2 text-xs text-gray-500">
             {description.trim().length}/240 characters
+          </p>
+        </div>
+
+        <div className="w-full max-w-xl">
+          <label
+            htmlFor="file-tags"
+            className="mb-2 block text-sm font-semibold text-blue-900"
+          >
+            Tags / Categories (optional)
+          </label>
+          <input
+            id="file-tags"
+            type="text"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            placeholder="notes, exam, python"
+            disabled={isUploading}
+            className="w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-sm text-gray-700 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:opacity-50"
+          />
+          <p className="mt-2 text-xs text-gray-500">
+            Separate tags with commas. Up to 5 tags will be saved.
           </p>
         </div>
 
