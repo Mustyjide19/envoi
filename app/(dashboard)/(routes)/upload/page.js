@@ -22,7 +22,7 @@ function Upload() {
   const [progress, setProgress] = useState(0);
   const [uploadCompleted, setUploadCompleted] = useState(false);
 
-  const uploadFile = (file) => {
+  const uploadFile = async (file, description = "") => {
     if (!file || status !== "authenticated") return;
 
     const validationResult = fileValidation.validateUploadFile(file);
@@ -52,12 +52,12 @@ function Upload() {
       },
       async () => {
         const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-        await saveInfo(fileName, file, downloadURL);
+        await saveInfo(fileName, file, downloadURL, description);
       }
     );
   };
 
-  const saveInfo = async (fileName, file, downloadURL) => {
+  const saveInfo = async (fileName, file, downloadURL, description = "") => {
     const docId = generateRandomString().toString();
 
     try {
@@ -72,6 +72,7 @@ function Upload() {
           fileType: file.type,
           fileSize: file.size,
           fileURL: downloadURL,
+          description,
           shortUrl: `${process.env.NEXT_PUBLIC_BASE_URL || ""}${docId}`,
         }),
       });

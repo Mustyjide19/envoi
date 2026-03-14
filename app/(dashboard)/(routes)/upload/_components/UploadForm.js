@@ -11,6 +11,7 @@ function UploadForm({ uploadFile }) {
 
   const fileInputRef = useRef(null);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [description, setDescription] = useState('');
   const [alertMsg, setAlertMsg] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -60,11 +61,12 @@ function UploadForm({ uploadFile }) {
     setShowError(false);
 
     try {
-      await uploadFile(selectedFile);
+      await uploadFile(selectedFile, description.trim());
 
       setIsUploading(false);
       setShowSuccess(true);
       setSelectedFile(null);
+      setDescription('');
       setAlertMsg('');
 
       if (fileInputRef.current) {
@@ -168,6 +170,28 @@ function UploadForm({ uploadFile }) {
           file={selectedFile}
           onRemove={() => setSelectedFile(null)}
         />
+
+        <div className="w-full max-w-xl">
+          <label
+            htmlFor="file-description"
+            className="mb-2 block text-sm font-semibold text-blue-900"
+          >
+            Description (optional)
+          </label>
+          <textarea
+            id="file-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            maxLength={240}
+            rows={3}
+            placeholder="Add a short note to help others understand this file."
+            disabled={isUploading}
+            className="w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-sm text-gray-700 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:opacity-50"
+          />
+          <p className="mt-2 text-xs text-gray-500">
+            {description.trim().length}/240 characters
+          </p>
+        </div>
 
         <button
           type="button"

@@ -116,7 +116,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { id, fileName, fileType, fileSize, fileURL, shortUrl } = body || {};
+    const { id, fileName, fileType, fileSize, fileURL, shortUrl, description } = body || {};
 
     if (!id || !fileName || !fileURL) {
       return NextResponse.json(
@@ -131,6 +131,7 @@ export async function POST(request) {
       fileType: fileType || "",
       fileSize: Number(fileSize) || 0,
       fileURL,
+      description: typeof description === "string" ? description.trim() : "",
       userEmail: session.user.email,
       userName: session.user.name || "",
       userVerified: !!session.user.isVerified,

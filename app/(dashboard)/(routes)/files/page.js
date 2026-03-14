@@ -284,6 +284,17 @@ export default function FilesPage() {
                   </div>
                 </div>
 
+                {file.description && (
+                  <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 px-3 py-3">
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                      Description
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-gray-700">
+                      {file.description}
+                    </p>
+                  </div>
+                )}
+
                 {activeTab === "shared" && (
                   <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2">
                     <p className="text-xs font-medium uppercase tracking-wide text-blue-700">
