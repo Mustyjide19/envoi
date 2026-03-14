@@ -167,7 +167,7 @@ export default function FilesPage() {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h2 className="text-3xl font-bold text-gray-900 mb-2">
-              {activeTab === "owned" ? "My Files" : "Shared With Me"}
+              {activeTab === "owned" ? "My Uploads" : "Shared With Me"}
             </h2>
             <p className="text-gray-600">
               {visibleFiles.length} file{visibleFiles.length !== 1 ? "s" : ""} total
@@ -180,16 +180,20 @@ export default function FilesPage() {
                 type="button"
                 onClick={() => setActiveTab("owned")}
                 className={`rounded-md px-4 py-2 text-sm font-medium ${
-                  activeTab === "owned" ? "bg-blue-600 text-white" : "text-gray-600"
+                  activeTab === "owned"
+                    ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-100"
+                    : "text-gray-600"
                 }`}
               >
-                My Files
+                My Uploads
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab("shared")}
                 className={`rounded-md px-4 py-2 text-sm font-medium ${
-                  activeTab === "shared" ? "bg-blue-600 text-white" : "text-gray-600"
+                  activeTab === "shared"
+                    ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-100"
+                    : "text-gray-600"
                 }`}
               >
                 Shared With Me
