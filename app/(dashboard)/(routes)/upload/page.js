@@ -114,17 +114,17 @@ function Upload() {
   }, [uploadCompleted, fileId, router]);
 
   return (
-    <div className="p-5 px-8 md:px-28">
-      <h2 className="text-[20px] text-center m-5">
-        Start <strong className="text-blue-900">Uploading</strong> Files and{" "}
-        <strong className="text-blue-900">Share</strong> it
+    <div className="mx-auto flex w-full max-w-5xl flex-col items-center px-4 py-8 sm:px-8 lg:px-12">
+      <h2 className="mb-8 text-center text-[20px]">
+        Start <strong className="app-accent-text">Uploading</strong> Files and{" "}
+        <strong className="app-accent-text">Share</strong> it
       </h2>
 
       {progress > 0 && progress < 100 && (
-        <div className="mb-4">
+        <div className="mb-6 w-full max-w-2xl">
           <div className="w-full bg-gray-200 rounded-full h-2.5">
             <div
-              className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+              className="app-accent-progress h-2.5 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
@@ -135,7 +135,7 @@ function Upload() {
       )}
 
       {uploadCompleted && (
-        <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
+        <div className="mb-6 w-full max-w-2xl rounded border border-green-400 bg-green-100 p-4 text-green-700">
           Upload successful! Redirecting to file preview...
         </div>
       )}

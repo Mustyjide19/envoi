@@ -9,7 +9,7 @@ export default function Layout({ children }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="flex h-screen">
+    <div className="app-page flex h-screen">
       <InactivityLogout />
 
       {/* Mobile sidebar overlay */}
@@ -22,7 +22,7 @@ export default function Layout({ children }) {
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 z-50 w-72 bg-white border-r transform transition-transform md:translate-x-0
+        className={`app-surface fixed inset-y-0 z-50 w-72 border-r transform transition-transform md:translate-x-0
         ${open ? "translate-x-0" : "-translate-x-full"} md:static`}
       >
         <SideNav />

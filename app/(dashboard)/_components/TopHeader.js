@@ -9,10 +9,10 @@ function TopHeader({ onMenuClick }) {
   const { data: session } = useSession();
 
   return (
-    <div className="relative flex p-5 border-b items-center justify-between md:justify-end">
+    <div className="app-surface relative flex items-center justify-between border-b p-5 md:justify-end">
       <div className="flex items-center gap-3 md:hidden">
         <AlignJustify
-          className="cursor-pointer"
+          className="app-text cursor-pointer"
           onClick={onMenuClick}
         />
       </div>
@@ -28,7 +28,7 @@ function TopHeader({ onMenuClick }) {
           height={32}
           className="rounded-md"
         />
-        <span className="font-bold text-lg">ENVOI</span>
+        <span className="app-text text-lg font-bold">ENVOI</span>
       </div>
 
       {session && <UserMenu user={session.user} />}

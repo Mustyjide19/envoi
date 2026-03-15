@@ -128,18 +128,18 @@ export default function FilesPage() {
 
   if (status === "loading" || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="app-page min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your files...</p>
+          <div className="app-accent-text mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2"></div>
+          <p className="app-text-muted">Loading your files...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
+    <div className="app-page min-h-screen">
+      <header className="app-surface border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <button
@@ -151,12 +151,12 @@ export default function FilesPage() {
                 alt="Envoi"
                 className="h-10 w-10 object-contain rounded"
               />
-              <h1 className="text-2xl font-bold text-gray-900">ENVOI</h1>
+              <h1 className="app-text text-2xl font-bold">ENVOI</h1>
             </button>
 
             <button
               onClick={() => router.push("/dashboard")}
-              className="text-gray-600 hover:text-gray-900 font-medium"
+              className="app-text-muted font-medium hover:opacity-80"
             >
               Back to Dashboard
             </button>
@@ -167,23 +167,23 @@ export default function FilesPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            <h2 className="app-text mb-2 text-3xl font-bold">
               {activeTab === "owned" ? "My Uploads" : "Shared With Me"}
             </h2>
-            <p className="text-gray-600">
+            <p className="app-text-muted">
               {visibleFiles.length} file{visibleFiles.length !== 1 ? "s" : ""} total
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="rounded-lg border border-gray-200 bg-white p-1">
+            <div className="app-surface rounded-lg border p-1">
               <button
                 type="button"
                 onClick={() => setActiveTab("owned")}
-                className={`rounded-md px-4 py-2 text-sm font-medium ${
+              className={`rounded-md px-4 py-2 text-sm font-medium ${
                   activeTab === "owned"
-                    ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-100"
-                    : "text-gray-600"
+                    ? "app-accent-btn app-accent-ring shadow-sm"
+                    : "app-text-muted"
                 }`}
               >
                 My Uploads
@@ -191,10 +191,10 @@ export default function FilesPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab("shared")}
-                className={`rounded-md px-4 py-2 text-sm font-medium ${
+              className={`rounded-md px-4 py-2 text-sm font-medium ${
                   activeTab === "shared"
-                    ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-100"
-                    : "text-gray-600"
+                    ? "app-accent-btn app-accent-ring shadow-sm"
+                    : "app-text-muted"
                 }`}
               >
                 Shared With Me
@@ -203,7 +203,7 @@ export default function FilesPage() {
 
             <button
               onClick={() => router.push("/upload")}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition flex items-center gap-2"
+              className="app-accent-btn flex items-center gap-2 rounded-lg px-6 py-3 font-semibold transition"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -215,26 +215,26 @@ export default function FilesPage() {
 
         {visibleFiles.length === 0 ? (
           activeTab === "owned" ? (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-16 text-center">
-              <svg className="w-20 h-20 text-gray-300 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="app-surface rounded-xl border p-16 text-center">
+              <svg className="app-text-muted mx-auto mb-6 h-20 w-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
               </svg>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No files yet</h3>
-              <p className="text-gray-500 mb-6">Upload your first file to get started</p>
+              <h3 className="app-text mb-2 text-xl font-semibold">No files yet</h3>
+              <p className="app-text-muted mb-6">Upload your first file to get started</p>
               <button
                 onClick={() => router.push("/upload")}
-                className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+                className="app-accent-btn rounded-lg px-8 py-3 font-semibold transition"
               >
                 Upload File
               </button>
             </div>
           ) : (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-16 text-center">
-              <svg className="w-20 h-20 text-gray-300 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="app-surface rounded-xl border p-16 text-center">
+              <svg className="app-text-muted mx-auto mb-6 h-20 w-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
               </svg>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No shared files yet</h3>
-              <p className="text-gray-500">Files shared with you will appear here.</p>
+              <h3 className="app-text mb-2 text-xl font-semibold">No shared files yet</h3>
+              <p className="app-text-muted">Files shared with you will appear here.</p>
             </div>
           )
         ) : (
@@ -242,55 +242,55 @@ export default function FilesPage() {
             {visibleFiles.map((file) => (
               <article
                 key={activeTab === "owned" ? file.id : file.shareId}
-                className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                className="app-surface rounded-xl border p-5 transition hover:-translate-y-0.5 hover:shadow-md"
               >
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-blue-100">
-                      <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="app-icon-surface flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border">
+                      <svg className="app-accent-text h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                       </svg>
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-base font-semibold text-gray-900">
+                      <p className="app-text truncate text-base font-semibold">
                         {file.fileName}
                       </p>
-                      <p className="truncate text-sm text-gray-500">
+                      <p className="app-text-muted truncate text-sm">
                         {file.fileType || "Unknown type"}
                       </p>
                     </div>
                   </div>
 
-                  <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
+                  <span className="app-accent-badge rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide">
                     {getFileTypeBadge(file)}
                   </span>
                 </div>
 
                 <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
-                  <div className="rounded-lg bg-gray-50 px-3 py-2">
-                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                  <div className="app-surface-muted rounded-lg border px-3 py-2">
+                    <p className="app-text-muted text-xs font-medium uppercase tracking-wide">
                       Size
                     </p>
-                    <p className="mt-1 font-semibold text-gray-900">
+                    <p className="app-text mt-1 font-semibold">
                       {formatFileSize(file.fileSize)}
                     </p>
                   </div>
-                  <div className="rounded-lg bg-gray-50 px-3 py-2">
-                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                  <div className="app-surface-muted rounded-lg border px-3 py-2">
+                    <p className="app-text-muted text-xs font-medium uppercase tracking-wide">
                       {activeTab === "owned" ? "Uploaded" : "Shared"}
                     </p>
-                    <p className="mt-1 font-semibold text-gray-900">
+                    <p className="app-text mt-1 font-semibold">
                       {formatDate(activeTab === "owned" ? file.fileName : file.sharedAt)}
                     </p>
                   </div>
                 </div>
 
                 {file.description && (
-                  <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 px-3 py-3">
-                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                  <div className="app-surface-muted mb-4 rounded-lg border px-3 py-3">
+                    <p className="app-text-muted text-xs font-medium uppercase tracking-wide">
                       Description
                     </p>
-                    <p className="mt-1 text-sm leading-6 text-gray-700">
+                    <p className="app-text-muted mt-1 text-sm leading-6">
                       {file.description}
                     </p>
                   </div>
@@ -298,14 +298,14 @@ export default function FilesPage() {
 
                 {Array.isArray(file.tags) && file.tags.length > 0 && (
                   <div className="mb-4">
-                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+                    <p className="app-text-muted mb-2 text-xs font-medium uppercase tracking-wide">
                       Tags
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {file.tags.map((tag) => (
                         <span
                           key={tag}
-                          className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700"
+                          className="app-accent-badge rounded-full px-3 py-1 text-xs font-semibold"
                         >
                           {tag}
                         </span>
@@ -315,8 +315,8 @@ export default function FilesPage() {
                 )}
 
                 {activeTab === "shared" && (
-                  <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2">
-                    <p className="text-xs font-medium uppercase tracking-wide text-blue-700">
+                  <div className="app-surface-muted mb-4 rounded-lg border px-3 py-2">
+                    <p className="app-text-muted text-xs font-medium uppercase tracking-wide">
                       Owner
                     </p>
                     <div className="mt-2 flex items-center gap-2">
@@ -325,7 +325,7 @@ export default function FilesPage() {
                         email={file.ownerEmail}
                         size="sm"
                       />
-                      <p className="text-sm font-semibold text-blue-900">
+                      <p className="text-sm font-semibold app-text">
                         {file.ownerName || file.ownerEmail}
                       </p>
                     </div>
@@ -333,21 +333,21 @@ export default function FilesPage() {
                 )}
 
                 <div className="mb-4 flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-600">
+                  <span className="app-text-muted app-border rounded-full border px-3 py-1 text-xs font-medium">
                     {activeTab === "owned" ? "Owned file" : "Shared file"}
                   </span>
                   {activeTab === "shared" && (
-                    <span className="rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-600">
+                    <span className="app-text-muted app-border rounded-full border px-3 py-1 text-xs font-medium">
                       Read-only access
                     </span>
                   )}
                 </div>
 
-                <div className="flex flex-wrap gap-2 border-t border-gray-100 pt-4">
+                <div className="app-border flex flex-wrap gap-2 border-t pt-4">
                   {activeTab === "owned" ? (
                     <button
                       onClick={() => router.push(`/file-preview/${file.id}`)}
-                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                      className="app-accent-btn rounded-lg px-4 py-2 text-sm font-semibold transition"
                       title="Share"
                     >
                       Share
@@ -355,7 +355,7 @@ export default function FilesPage() {
                   ) : (
                     <button
                       onClick={() => router.push(`/shared-files/${file.shareId}`)}
-                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                      className="app-accent-btn rounded-lg px-4 py-2 text-sm font-semibold transition"
                     >
                       View
                     </button>
@@ -386,3 +386,4 @@ export default function FilesPage() {
     </div>
   );
 }
+

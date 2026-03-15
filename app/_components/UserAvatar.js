@@ -29,14 +29,19 @@ function UserAvatar({ name, email, image, size = "md" }) {
       <img
         src={image}
         alt={name || email || "User avatar"}
-        className={`${sizeClass} rounded-full object-cover border border-blue-100 bg-white`}
+        className={`${sizeClass} rounded-full object-cover border app-border bg-white`}
       />
     );
   }
 
   return (
     <div
-      className={`${sizeClass} flex items-center justify-center rounded-full border border-blue-100 bg-blue-100 font-semibold text-blue-700`}
+      className={`${sizeClass} flex items-center justify-center rounded-full border font-semibold`}
+      style={{
+        borderColor: "var(--accent-soft-border)",
+        backgroundColor: "var(--accent-avatar-bg)",
+        color: "var(--accent-avatar-text)",
+      }}
       aria-label={name || email || "User avatar"}
       title={name || email || "User"}
     >

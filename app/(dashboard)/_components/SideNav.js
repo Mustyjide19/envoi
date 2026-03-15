@@ -10,8 +10,8 @@ export default function SideNav() {
   ];
 
   return (
-    <aside className="h-screen w-72 bg-white border-r border-slate-200">
-      <div className="px-6 py-5 border-b border-slate-200">
+    <aside className="app-surface h-screen w-72 border-r">
+      <div className="app-border border-b px-6 py-5">
         <Link href="/" className="flex items-center gap-3">
           <Image
             src="/logoicon.jpg"
@@ -21,7 +21,7 @@ export default function SideNav() {
             className="rounded-md"
             priority
           />
-          <span className="text-xl font-extrabold tracking-wide text-slate-900">
+          <span className="app-text text-xl font-extrabold tracking-wide">
             ENVOI
           </span>
         </Link>
@@ -34,7 +34,7 @@ export default function SideNav() {
             <Link
               key={item.id}
               href={item.path}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-700 hover:bg-slate-100 transition"
+              className="app-text-muted hover:bg-[var(--app-surface-muted)] flex items-center gap-3 rounded-lg px-4 py-3 transition"
             >
               <Icon className="w-5 h-5" />
               <span className="font-medium">{item.name}</span>

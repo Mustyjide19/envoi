@@ -96,8 +96,8 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
+    <div className="app-page min-h-screen">
+      <header className="app-surface border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <button 
             onClick={() => router.push("/")}
@@ -108,7 +108,7 @@ export default function Dashboard() {
               alt="Envoi"
               className="h-10 w-10 object-contain rounded"
             />
-            <h1 className="text-2xl font-bold text-gray-900">ENVOI</h1>
+            <h1 className="app-text text-2xl font-bold">ENVOI</h1>
           </button>
           
           <UserMenu user={session.user} />
@@ -134,53 +134,53 @@ export default function Dashboard() {
         )}
 
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+          <h2 className="app-text mb-2 text-3xl font-bold">
             Welcome back, {session.user.name?.split(' ')[0]}! 👋
           </h2>
-          <p className="text-gray-600">
+          <p className="app-text-muted">
             Manage your files and share them securely with your classmates
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="app-surface rounded-xl border p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Files</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalFiles}</p>
+                <p className="app-text-muted text-sm font-medium">Total Files</p>
+                <p className="app-text mt-2 text-3xl font-bold">{stats.totalFiles}</p>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="app-icon-surface flex h-12 w-12 items-center justify-center rounded-lg border">
+                <svg className="app-accent-text w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="app-surface rounded-xl border p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Storage Used</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
+                <p className="app-text-muted text-sm font-medium">Storage Used</p>
+                <p className="app-text mt-2 text-3xl font-bold">
                   {(stats.totalSize / (1024 * 1024)).toFixed(2)} MB
                 </p>
               </div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="app-icon-surface flex h-12 w-12 items-center justify-center rounded-lg border">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
                 </svg>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="app-surface rounded-xl border p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Protected Files</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.sharedFiles}</p>
+                <p className="app-text-muted text-sm font-medium">Protected Files</p>
+                <p className="app-text mt-2 text-3xl font-bold">{stats.sharedFiles}</p>
               </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="app-icon-surface flex h-12 w-12 items-center justify-center rounded-lg border">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
               </div>
@@ -191,42 +191,42 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <button
             onClick={() => router.push("/upload")}
-            className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl p-6 shadow-sm transition flex items-center gap-4"
+            className="app-accent-btn rounded-xl p-6 shadow-sm transition flex items-center gap-4"
           >
-            <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-white/20 bg-white/10">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
             </div>
             <div className="text-left">
               <h3 className="text-lg font-semibold">Upload New File</h3>
-              <p className="text-sm text-blue-100">Share documents with classmates</p>
+              <p className="text-sm text-white/80">Share documents with classmates</p>
             </div>
           </button>
 
           <button
             onClick={() => router.push("/files")}
-            className="bg-white hover:bg-gray-50 text-gray-900 rounded-xl p-6 shadow-sm border border-gray-200 transition flex items-center gap-4"
+            className="app-surface app-text rounded-xl border p-6 transition flex items-center gap-4 hover:bg-[var(--app-surface-muted)]"
           >
-            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="app-surface-muted flex h-12 w-12 items-center justify-center rounded-lg border">
+              <svg className="app-text w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
               </svg>
             </div>
             <div className="text-left">
               <h3 className="text-lg font-semibold">My Files</h3>
-              <p className="text-sm text-gray-600">View and manage uploads</p>
+              <p className="app-text-muted text-sm">View and manage uploads</p>
             </div>
           </button>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Recent Uploads</h3>
+        <div className="app-surface overflow-hidden rounded-xl border">
+          <div className="app-border flex items-center justify-between border-b px-6 py-4">
+            <h3 className="app-text text-lg font-semibold">Recent Uploads</h3>
             {uploadedFiles.length > 5 && (
               <button
                 onClick={() => router.push("/files")}
-                className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                className="app-accent-text text-sm font-medium"
               >
                 View All →
               </button>
@@ -235,13 +235,13 @@ export default function Dashboard() {
           
           {uploadedFiles.length === 0 ? (
             <div className="p-12 text-center">
-              <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="app-text-muted mx-auto mb-4 h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
-              <p className="text-gray-500 mb-4">No files uploaded yet</p>
+              <p className="app-text-muted mb-4">No files uploaded yet</p>
               <button
                 onClick={() => router.push("/upload")}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                className="app-accent-btn rounded-lg px-6 py-2 transition"
               >
                 Upload Your First File
               </button>
@@ -249,19 +249,19 @@ export default function Dashboard() {
           ) : (
             <div className="divide-y divide-gray-200">
               {uploadedFiles.slice(0, 5).map((file, index) => (
-                <div key={index} className="px-6 py-4 hover:bg-gray-50 transition">
+                <div key={index} className="px-6 py-4 transition hover:bg-[var(--app-surface-muted)]">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="app-icon-surface flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border">
+                        <svg className="app-accent-text w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                         </svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 truncate">
+                        <p className="app-text truncate font-medium">
                           {file.fileName}
                         </p>
-                        <div className="flex items-center gap-3 text-sm text-gray-500">
+                        <div className="app-text-muted flex items-center gap-3 text-sm">
                           <span>{(file.fileSize / 1024).toFixed(2)} KB</span>
                           <span>•</span>
                           <span>{formatDate(file.fileName)}</span>
@@ -270,7 +270,7 @@ export default function Dashboard() {
                     </div>
                     <button
                       onClick={() => router.push(`/file-preview/${file.id}`)}
-                      className="px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition flex-shrink-0"
+                      className="app-accent-text rounded-lg px-4 py-2 text-sm font-medium transition hover:bg-[var(--accent-soft)] flex-shrink-0"
                     >
                       View
                     </button>
@@ -284,3 +284,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

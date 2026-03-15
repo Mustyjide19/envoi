@@ -164,7 +164,7 @@ function FileShareForm({ file, onPasswordSave }) {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-8 border-2 border-blue-200 rounded-xl bg-white">
+    <div className="app-surface flex flex-col gap-4 rounded-xl border p-8">
       {!isVerified && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           You must verify your account before sharing files.
@@ -172,7 +172,7 @@ function FileShareForm({ file, onPasswordSave }) {
       )}
 
       <div className="mt-1">
-        <label className="text-sm font-semibold text-gray-700 mb-2 block">
+        <label className="app-text mb-2 block text-sm font-semibold">
           Share with Registered User
         </label>
         <input
@@ -181,12 +181,12 @@ function FileShareForm({ file, onPasswordSave }) {
           onChange={(e) => setDirectShareEmail(e.target.value)}
           placeholder="registered.user@example.com"
           disabled={!isVerified || isDirectSharing}
-          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 mb-3"
+          className="app-surface-muted app-text mb-3 w-full rounded-lg border px-4 py-3"
         />
         <button
           onClick={handleDirectShare}
           disabled={!isVerified || isDirectSharing || !directShareEmail}
-          className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="app-accent-btn w-full rounded-lg px-6 py-3 font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isDirectSharing ? "Sharing..." : "Share Inside App"}
         </button>
@@ -199,7 +199,7 @@ function FileShareForm({ file, onPasswordSave }) {
       </div>
 
       <div>
-        <label className="text-sm font-semibold text-gray-700 mb-2 block">
+        <label className="app-text mb-2 block text-sm font-semibold">
           Short URL
         </label>
         <div className="flex items-center gap-2">
@@ -207,16 +207,16 @@ function FileShareForm({ file, onPasswordSave }) {
             type="text"
             value={file?.shortUrl || ""}
             readOnly
-            className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 text-sm"
+            className="app-surface-muted app-text flex-1 rounded-lg border px-4 py-3 text-sm"
           />
           <button
             onClick={copyToClipboard}
             disabled={!isVerified}
-            className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="app-surface-muted app-text rounded-lg border p-3 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             title="Copy to clipboard"
           >
             <svg
-              className="w-5 h-5 text-gray-600"
+              className="app-text-muted h-5 w-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -240,8 +240,9 @@ function FileShareForm({ file, onPasswordSave }) {
           onChange={(e) => setEnablePassword(e.target.checked)}
           disabled={!isVerified}
           className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          style={{ accentColor: "var(--accent-solid)" }}
         />
-        <label htmlFor="enablePassword" className="font-semibold text-gray-700">
+        <label htmlFor="enablePassword" className="app-text font-semibold">
           Enable Password?
         </label>
       </div>
@@ -254,12 +255,12 @@ function FileShareForm({ file, onPasswordSave }) {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter password"
             disabled={!isVerified}
-            className="w-full px-4 py-3 pr-12 bg-gray-50 border border-gray-200 rounded-lg text-gray-700"
+            className="app-surface-muted app-text w-full rounded-lg border px-4 py-3 pr-12"
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            className="app-text-muted absolute right-3 top-1/2 -translate-y-1/2 hover:opacity-80"
           >
             {showPassword ? (
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -275,7 +276,7 @@ function FileShareForm({ file, onPasswordSave }) {
           {passwordStrength && (
             <div className="mt-3">
               <div className="mb-1 flex items-center justify-between text-xs">
-                <span className="font-medium text-gray-500">Password strength</span>
+                <span className="app-text-muted font-medium">Password strength</span>
                 <span
                   className={`font-semibold ${
                     passwordStrength.level === "strong"
@@ -288,7 +289,7 @@ function FileShareForm({ file, onPasswordSave }) {
                   {passwordStrength.level.charAt(0).toUpperCase() + passwordStrength.level.slice(1)}
                 </span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+              <div className="app-surface-muted h-2 overflow-hidden rounded-full border">
                 <div
                   className={`h-full rounded-full transition-all duration-300 ${strengthBarClass}`}
                   style={{ width: strengthWidth }}
@@ -302,13 +303,13 @@ function FileShareForm({ file, onPasswordSave }) {
       <button
         onClick={handleSavePassword}
         disabled={!isVerified || isSaving || (enablePassword && !password)}
-        className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        className="app-accent-btn w-full rounded-lg px-6 py-3 font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isSaving ? "Saving..." : "Save"}
       </button>
 
       <div className="mt-4">
-        <label className="text-sm font-semibold text-gray-700 mb-2 block">
+        <label className="app-text mb-2 block text-sm font-semibold">
           Send File to Email
         </label>
         <input
@@ -317,12 +318,12 @@ function FileShareForm({ file, onPasswordSave }) {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="example@gmail.com"
           disabled={!isVerified}
-          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 mb-3"
+          className="app-surface-muted app-text mb-3 w-full rounded-lg border px-4 py-3"
         />
         <button
           onClick={handleSendEmail}
           disabled={!isVerified || isSendingEmail || !email}
-          className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="app-accent-btn w-full rounded-lg px-6 py-3 font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isSendingEmail ? "Sending..." : "Send Email"}
         </button>
@@ -332,3 +333,4 @@ function FileShareForm({ file, onPasswordSave }) {
 }
 
 export default FileShareForm;
+

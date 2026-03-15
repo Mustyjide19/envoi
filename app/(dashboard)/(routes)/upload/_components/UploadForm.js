@@ -18,6 +18,7 @@ function UploadForm({ uploadFile }) {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const acceptedTypesLabel = fileValidation.DISPLAYED_ALLOWED_EXTENSIONS.join(', ');
 
   const handleBrowseClick = () => {
     fileInputRef.current?.click();
@@ -133,26 +134,31 @@ function UploadForm({ uploadFile }) {
       <div className="w-full flex flex-col items-center gap-6">
         <AlertMessage message={alertMsg} />
 
-        <div className="flex justify-center w-full">
-          <div className="flex flex-col items-center justify-center w-full max-w-xl h-80 bg-blue-50 border-2 border-dashed border-blue-300 rounded-3xl shadow-md">
-            <div className="flex flex-col items-center justify-center px-8 py-6">
-              <p className="mb-3 text-xl font-semibold text-blue-900">
+        <div className="flex w-full justify-center">
+          <div className="flex h-80 w-full max-w-2xl flex-col items-center justify-center rounded-3xl border-2 border-dashed shadow-md app-accent-soft">
+            <div className="flex max-w-md flex-col items-center justify-center px-8 py-6 text-center">
+              <p className="app-text mb-3 text-xl font-semibold">
                 Browse and select a file
               </p>
 
-              <p className="text-sm mb-2 text-blue-700 text-center">
-                Accepted: Documents, spreadsheets, images, code files, and PCAP
+              <p className="app-text-muted mb-2 text-center text-sm">
+                Accepted: {acceptedTypesLabel}
               </p>
 
-              <p className="text-base mb-5 text-blue-700">
-                Max file size: <span className="font-semibold text-blue-900">30MB</span>
+              <p className="app-text-muted mb-5 text-base">
+                Max file size: <span className="app-text font-semibold">30MB</span>
               </p>
 
               <button
                 type="button"
                 onClick={handleBrowseClick}
                 disabled={isUploading}
-                className="inline-flex items-center text-blue-900 bg-white border border-blue-300 hover:bg-blue-100 font-medium rounded-xl text-base px-6 py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center rounded-xl border bg-white px-6 py-3 text-base font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                style={{
+                  color: "var(--accent-soft-text)",
+                  borderColor: "var(--accent-soft-border)",
+                  backgroundColor: "var(--app-surface)",
+                }}
               >
                 Browse file
               </button>
@@ -173,10 +179,10 @@ function UploadForm({ uploadFile }) {
           onRemove={() => setSelectedFile(null)}
         />
 
-        <div className="w-full max-w-xl">
+        <div className="w-full max-w-2xl">
           <label
             htmlFor="file-description"
-            className="mb-2 block text-sm font-semibold text-blue-900"
+            className="app-text mb-2 block text-sm font-semibold"
           >
             Description (optional)
           </label>
@@ -188,17 +194,21 @@ function UploadForm({ uploadFile }) {
             rows={3}
             placeholder="Add a short note to help others understand this file."
             disabled={isUploading}
-            className="w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-sm text-gray-700 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:opacity-50"
+            className="w-full rounded-2xl border bg-white px-4 py-3 text-sm text-gray-700 shadow-sm outline-none transition disabled:opacity-50"
+            style={{
+              borderColor: "var(--accent-soft-border)",
+              boxShadow: "0 1px 2px rgb(15 23 42 / 0.08)",
+            }}
           />
           <p className="mt-2 text-xs text-gray-500">
             {description.trim().length}/240 characters
           </p>
         </div>
 
-        <div className="w-full max-w-xl">
+        <div className="w-full max-w-2xl">
           <label
             htmlFor="file-tags"
-            className="mb-2 block text-sm font-semibold text-blue-900"
+            className="app-text mb-2 block text-sm font-semibold"
           >
             Tags / Categories (optional)
           </label>
@@ -209,7 +219,11 @@ function UploadForm({ uploadFile }) {
             onChange={(e) => setTags(e.target.value)}
             placeholder="notes, exam, python"
             disabled={isUploading}
-            className="w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-sm text-gray-700 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:opacity-50"
+            className="w-full rounded-2xl border bg-white px-4 py-3 text-sm text-gray-700 shadow-sm outline-none transition disabled:opacity-50"
+            style={{
+              borderColor: "var(--accent-soft-border)",
+              boxShadow: "0 1px 2px rgb(15 23 42 / 0.08)",
+            }}
           />
           <p className="mt-2 text-xs text-gray-500">
             Separate tags with commas. Up to 5 tags will be saved.
@@ -220,9 +234,9 @@ function UploadForm({ uploadFile }) {
           type="button"
           onClick={handleUpload}
           disabled={!selectedFile || isUploading}
-          className={`px-8 py-3 rounded-xl text-base font-medium transition-colors ${
+          className={`rounded-xl px-8 py-3 text-base font-medium transition-colors ${
             selectedFile && !isUploading
-              ? 'bg-blue-900 text-white hover:bg-blue-800'
+              ? 'app-accent-btn'
               : 'bg-gray-300 text-gray-600 cursor-not-allowed'
           }`}
         >

@@ -23,6 +23,19 @@ const ALLOWED_EXTENSIONS = new Set([
   ".pcap",
 ]);
 
+const DISPLAYED_ALLOWED_EXTENSIONS = [
+  ".pdf",
+  ".docx",
+  ".xlsx",
+  ".jpg",
+  ".png",
+  ".py",
+  ".java",
+  ".js",
+  ".sql",
+  ".pcap",
+];
+
 const ALLOWED_MIME_BY_EXTENSION = {
   ".pdf": new Set(["application/pdf"]),
   ".doc": new Set(["application/msword"]),
@@ -119,5 +132,6 @@ function validateUploadFile(file) {
 
 module.exports = {
   MAX_FILE_SIZE,
+  DISPLAYED_ALLOWED_EXTENSIONS,
   validateUploadFile,
 };
