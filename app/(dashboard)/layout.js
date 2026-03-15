@@ -3,12 +3,15 @@
 import { useState } from "react";
 import SideNav from "./_components/SideNav";
 import TopHeader from "./_components/TopHeader";
+import InactivityLogout from "../_components/InactivityLogout";
 
 export default function Layout({ children }) {
   const [open, setOpen] = useState(false);
 
   return (
     <div className="flex h-screen">
+      <InactivityLogout />
+
       {/* Mobile sidebar overlay */}
       {open && (
         <div
