@@ -1,8 +1,9 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { AlignJustify } from "lucide-react";
 import Image from "next/image";
+import UserMenu from "../../_components/UserMenu";
 
 function TopHeader({ onMenuClick }) {
   const { data: session } = useSession();
@@ -30,24 +31,7 @@ function TopHeader({ onMenuClick }) {
         <span className="font-bold text-lg">ENVOI</span>
       </div>
 
-      {session && (
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm">{session.user?.name}</span>
-            {session.user?.isVerified && (
-              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
-                Verified
-              </span>
-            )}
-          </div>
-          <button
-            onClick={() => signOut()}
-            className="px-3 py-1 text-sm bg-black text-white rounded-md"
-          >
-            Sign Out
-          </button>
-        </div>
-      )}
+      {session && <UserMenu user={session.user} />}
     </div>
   );
 }

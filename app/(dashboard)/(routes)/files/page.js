@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getStorage, ref, deleteObject } from "firebase/storage";
 import { app } from "../../../../firebaseConfig";
+import UserAvatar from "../../../_components/UserAvatar";
 
 export default function FilesPage() {
   const { data: session, status } = useSession();
@@ -318,9 +319,16 @@ export default function FilesPage() {
                     <p className="text-xs font-medium uppercase tracking-wide text-blue-700">
                       Owner
                     </p>
-                    <p className="mt-1 text-sm font-semibold text-blue-900">
-                      {file.ownerName || file.ownerEmail}
-                    </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <UserAvatar
+                        name={file.ownerName}
+                        email={file.ownerEmail}
+                        size="sm"
+                      />
+                      <p className="text-sm font-semibold text-blue-900">
+                        {file.ownerName || file.ownerEmail}
+                      </p>
+                    </div>
                   </div>
                 )}
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import UserAvatar from "../../_components/UserAvatar";
 
 export default function FileViewPage({ params }) {
   const router = useRouter();
@@ -191,9 +192,11 @@ export default function FileViewPage({ params }) {
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
               <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <UserAvatar
+                  name={file.userName}
+                  email={file.userEmail}
+                  size="sm"
+                />
                 <div>
                   <div className="mb-1 flex items-center gap-2">
                     <p className="text-sm font-semibold text-blue-900">Shared by {file.userName}</p>

@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { useSession } from "next-auth/react";
+import { checkPasswordStrength } from "../../../../../../utils/passwordStrength";
 
 function FileShareForm({ file, onPasswordSave }) {
   const { data: session } = useSession();
@@ -15,6 +16,19 @@ function FileShareForm({ file, onPasswordSave }) {
   const [isDirectSharing, setIsDirectSharing] = useState(false);
   const [directShareMessage, setDirectShareMessage] = useState("");
   const [directShareError, setDirectShareError] = useState("");
+  const passwordStrength = password ? checkPasswordStrength(password) : null;
+  const strengthBarClass =
+    passwordStrength?.level === "strong"
+      ? "bg-green-500"
+      : passwordStrength?.level === "medium"
+        ? "bg-yellow-400"
+        : "bg-red-500";
+  const strengthWidth =
+    passwordStrength?.level === "strong"
+      ? "100%"
+      : passwordStrength?.level === "medium"
+        ? "66%"
+        : "33%";
 
   const handleSavePassword = async () => {
     if (!file?.id) return;
@@ -258,6 +272,30 @@ function FileShareForm({ file, onPasswordSave }) {
               </svg>
             )}
           </button>
+          {passwordStrength && (
+            <div className="mt-3">
+              <div className="mb-1 flex items-center justify-between text-xs">
+                <span className="font-medium text-gray-500">Password strength</span>
+                <span
+                  className={`font-semibold ${
+                    passwordStrength.level === "strong"
+                      ? "text-green-600"
+                      : passwordStrength.level === "medium"
+                        ? "text-yellow-600"
+                        : "text-red-600"
+                  }`}
+                >
+                  {passwordStrength.level.charAt(0).toUpperCase() + passwordStrength.level.slice(1)}
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+                <div
+                  className={`h-full rounded-full transition-all duration-300 ${strengthBarClass}`}
+                  style={{ width: strengthWidth }}
+                ></div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import UserAvatar from "../../_components/UserAvatar";
 
 export default function SharedFilePage({ params }) {
   const router = useRouter();
@@ -78,7 +79,14 @@ export default function SharedFilePage({ params }) {
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
             <h1 className="text-2xl font-bold text-white">Shared With Me</h1>
-            <p className="text-blue-100">Shared by {share.ownerName || share.ownerEmail}</p>
+            <div className="mt-3 flex items-center gap-3">
+              <UserAvatar
+                name={share.ownerName}
+                email={share.ownerEmail}
+                size="sm"
+              />
+              <p className="text-blue-100">Shared by {share.ownerName || share.ownerEmail}</p>
+            </div>
           </div>
 
           <div className="p-8">

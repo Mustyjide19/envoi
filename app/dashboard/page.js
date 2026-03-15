@@ -1,8 +1,9 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import UserMenu from "../_components/UserMenu";
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -110,22 +111,7 @@ export default function Dashboard() {
             <h1 className="text-2xl font-bold text-gray-900">ENVOI</h1>
           </button>
           
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-gray-700 font-medium">{session.user.name}</span>
-              {session.user?.isVerified && (
-                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
-                  Verified
-                </span>
-              )}
-            </div>
-            <button
-              onClick={() => signOut({ callbackUrl: "/" })}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-            >
-              Sign Out
-            </button>
-          </div>
+          <UserMenu user={session.user} />
         </div>
       </header>
 
