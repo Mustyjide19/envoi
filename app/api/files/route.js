@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { FieldPath } from "firebase-admin/firestore";
 import { auth } from "../../../auth";
 import { getAdminDb } from "../../../firebaseAdmin";
+import { FILE_ACTIONS, logFileAction } from "../../../utils/fileAccessLog";
 
 export const runtime = "nodejs";
 
@@ -140,6 +141,13 @@ export async function POST(request) {
       userVerified: !!session.user.isVerified,
       password: "",
       shortUrl: shortUrl || `${process.env.NEXT_PUBLIC_BASE_URL || ""}${id}`,
+    });
+
+    await logFileAction({
+      fileId: id,
+      actorUserId: session.user.id,
+      actorEmail: session.user.email,
+      action: FILE_ACTIONS.UPLOAD,
     });
 
     return NextResponse.json({ ok: true, id });

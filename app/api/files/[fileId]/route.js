@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "../../../../auth";
 import { getAdminDb } from "../../../../firebaseAdmin";
+import { FILE_ACTIONS, logFileAction } from "../../../../utils/fileAccessLog";
 
 export const runtime = "nodejs";
 
@@ -37,6 +38,13 @@ export async function GET(request, context) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
+    await logFileAction({
+      fileId,
+      actorUserId: session.user.id,
+      actorEmail: session.user.email,
+      action: FILE_ACTIONS.VIEW,
+    });
+
     return NextResponse.json(result.file);
   } catch (error) {
     console.error("GET /api/files/[fileId] failed:", error);
@@ -66,8 +74,18 @@ export async function PATCH(request, context) {
 
     const body = await request.json();
     const password = typeof body?.password === "string" ? body.password : "";
+    const hadPassword = !!result.file.password;
 
     await result.fileSnap.ref.update({ password });
+
+    if (hadPassword && !password) {
+      await logFileAction({
+        fileId,
+        actorUserId: session.user.id,
+        actorEmail: session.user.email,
+        action: FILE_ACTIONS.REVOKE_ACCESS,
+      });
+    }
 
     return NextResponse.json({
       ok: true,

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "../../../../auth";
 import { getAdminDb } from "../../../../firebaseAdmin";
+import { FILE_ACTIONS, logFileAction } from "../../../../utils/fileAccessLog";
 
 export const runtime = "nodejs";
 
@@ -45,6 +46,13 @@ export async function GET(request, { params }) {
         { status: 404 }
       );
     }
+
+    await logFileAction({
+      fileId: shareData.fileId,
+      actorUserId: session.user.id,
+      actorEmail: session.user.email,
+      action: FILE_ACTIONS.VIEW,
+    });
 
     return NextResponse.json({
       share: shareData,

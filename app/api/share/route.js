@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { auth } from "../../../auth";
 import { getAdminDb } from "../../../firebaseAdmin";
 import directShareValidation from "../../../utils/directShareValidation";
+import { FILE_ACTIONS, logFileAction } from "../../../utils/fileAccessLog";
 
 const prisma = new PrismaClient();
 export const runtime = "nodejs";
@@ -87,6 +88,13 @@ export async function POST(request) {
       recipientUserId: recipient.id,
       recipientEmail: recipient.email,
       sharedAt,
+    });
+
+    await logFileAction({
+      fileId,
+      actorUserId: session.user.id,
+      actorEmail: session.user.email,
+      action: FILE_ACTIONS.SHARE,
     });
 
     return NextResponse.json({

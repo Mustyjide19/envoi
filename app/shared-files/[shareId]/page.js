@@ -72,6 +72,24 @@ export default function SharedFilePage({ params }) {
   const file = sharedFile.file;
   const share = sharedFile.share;
   const isImage = file.fileType?.startsWith("image/");
+  
+  const handleDownload = async () => {
+    try {
+      await fetch("/api/files/access-log", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fileId: file.id,
+        }),
+      });
+    } catch (error) {
+      console.error("Failed to log download:", error);
+    }
+
+    window.open(file.fileURL, "_blank");
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
@@ -111,7 +129,7 @@ export default function SharedFilePage({ params }) {
             )}
 
             <button
-              onClick={() => window.open(file.fileURL, "_blank")}
+              onClick={handleDownload}
               className="w-full rounded-lg bg-blue-600 px-6 py-4 font-semibold text-white hover:bg-blue-700 transition"
             >
               Download File

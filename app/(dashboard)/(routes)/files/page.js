@@ -82,7 +82,25 @@ export default function FilesPage() {
     }
   };
 
-  const handleDownload = (file) => {
+  const handleDownload = async (file) => {
+    if (!file?.id) {
+      return;
+    }
+
+    try {
+      await fetch("/api/files/access-log", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fileId: file.id,
+        }),
+      });
+    } catch (error) {
+      console.error("Failed to log download:", error);
+    }
+
     window.open(file.fileURL, "_blank");
   };
 
