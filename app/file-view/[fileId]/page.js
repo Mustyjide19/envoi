@@ -12,6 +12,7 @@ export default function FileViewPage({ params }) {
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isUnlocking, setIsUnlocking] = useState(false);
 
   useEffect(() => {
     params.then((resolvedParams) => {
@@ -33,10 +34,7 @@ export default function FileViewPage({ params }) {
       if (response.ok) {
         const fileData = await response.json();
         setFile(fileData);
-
-        if (!fileData.password) {
-          setIsUnlocked(true);
-        }
+        setIsUnlocked(!!fileData.unlocked || !fileData.passwordProtected);
       } else {
         alert("File not found or has been deleted");
         router.push("/");
@@ -49,15 +47,33 @@ export default function FileViewPage({ params }) {
     }
   };
 
-  const handlePasswordSubmit = (e) => {
+  const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     setPasswordError("");
+    setIsUnlocking(true);
 
-    if (password === file.password) {
-      setIsUnlocked(true);
-    } else {
-      setPasswordError("Incorrect password. Please try again.");
+    try {
+      const response = await fetch(`/api/public-files/${fileId}/unlock`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setPasswordError(data?.error || "Incorrect password. Please try again.");
+        setPassword("");
+        return;
+      }
+
+      await fetchFile();
       setPassword("");
+    } catch {
+      setPasswordError("Failed to unlock file. Please try again.");
+    } finally {
+      setIsUnlocking(false);
     }
   };
 
@@ -128,15 +144,17 @@ export default function FileViewPage({ params }) {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={isUnlocking}
                 required
               />
             </div>
 
             <button
               type="submit"
-              className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+              disabled={isUnlocking}
+              className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
             >
-              Unlock File
+              {isUnlocking ? "Unlocking..." : "Unlock File"}
             </button>
           </form>
         </div>

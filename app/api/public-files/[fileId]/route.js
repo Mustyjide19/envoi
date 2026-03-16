@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminDb } from "../../../../firebaseAdmin";
+import protectedFileAccess from "../../../../utils/protectedFileAccess";
 
 export const runtime = "nodejs";
 
@@ -16,7 +17,16 @@ export async function GET(request, context) {
       );
     }
 
-    return NextResponse.json(fileSnap.data());
+    const file = fileSnap.data();
+    const isUnlocked =
+      !file.password ||
+      request.cookies.get(
+        protectedFileAccess.getPublicUnlockCookieName(fileId)
+      )?.value === "1";
+
+    return NextResponse.json(
+      protectedFileAccess.buildPublicFileResponse(file, isUnlocked)
+    );
   } catch (error) {
     console.error("GET /api/public-files/[fileId] failed:", error);
     return NextResponse.json(

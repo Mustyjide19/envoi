@@ -12,6 +12,9 @@ export default function SharedFilePage({ params }) {
   const [sharedFile, setSharedFile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [isUnlocking, setIsUnlocking] = useState(false);
 
   useEffect(() => {
     params.then((resolvedParams) => {
@@ -28,27 +31,61 @@ export default function SharedFilePage({ params }) {
   useEffect(() => {
     if (!shareId || status !== "authenticated") return;
 
-    const loadSharedFile = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(`/api/shared-files/${shareId}`);
-        const data = await response.json();
-
-        if (!response.ok) {
-          setError(data?.error || "Unable to load shared file.");
-          return;
-        }
-
-        setSharedFile(data);
-      } catch {
-        setError("Unable to load shared file.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     void loadSharedFile();
   }, [shareId, status]);
+
+  const loadSharedFile = async () => {
+    setIsLoading(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/shared-files/${shareId}`, {
+        cache: "no-store",
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data?.error || "Unable to load shared file.");
+        setSharedFile(null);
+        return;
+      }
+
+      setSharedFile(data);
+    } catch {
+      setError("Unable to load shared file.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUnlockSubmit = async (event) => {
+    event.preventDefault();
+    setPasswordError("");
+    setIsUnlocking(true);
+
+    try {
+      const response = await fetch(`/api/shared-files/${shareId}/unlock`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setPasswordError(data?.error || "Incorrect password. Please try again.");
+        setPassword("");
+        return;
+      }
+
+      setPassword("");
+      await loadSharedFile();
+    } catch {
+      setPasswordError("Failed to unlock shared file. Please try again.");
+    } finally {
+      setIsUnlocking(false);
+    }
+  };
 
   if (status === "loading" || isLoading) {
     return (
@@ -72,7 +109,7 @@ export default function SharedFilePage({ params }) {
   const file = sharedFile.file;
   const share = sharedFile.share;
   const isImage = file.fileType?.startsWith("image/");
-  
+
   const handleDownload = async () => {
     try {
       await fetch("/api/files/access-log", {
@@ -118,22 +155,68 @@ export default function SharedFilePage({ params }) {
               </div>
             </div>
 
-            {isImage && (
-              <div className="mb-6">
-                <img
-                  src={file.fileURL}
-                  alt={file.fileName}
-                  className="max-w-full h-auto rounded-lg border border-gray-200"
-                />
-              </div>
-            )}
+            {sharedFile.passwordProtected && !sharedFile.unlocked ? (
+              <>
+                <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                  <p className="text-sm font-medium text-amber-900">
+                    This shared file is password protected.
+                  </p>
+                  <p className="mt-1 text-sm text-amber-800">
+                    Enter the share password to access and download the file.
+                  </p>
+                </div>
 
-            <button
-              onClick={handleDownload}
-              className="w-full rounded-lg bg-blue-600 px-6 py-4 font-semibold text-white hover:bg-blue-700 transition"
-            >
-              Download File
-            </button>
+                {passwordError && (
+                  <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
+                    <p className="text-sm text-red-600">{passwordError}</p>
+                  </div>
+                )}
+
+                <form onSubmit={handleUnlockSubmit} className="space-y-4">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-gray-700">
+                      Share password
+                    </label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter password"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                      disabled={isUnlocking}
+                      required
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isUnlocking}
+                    className="w-full rounded-lg bg-blue-600 px-6 py-4 font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {isUnlocking ? "Unlocking..." : "Unlock Shared File"}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
+                {isImage && (
+                  <div className="mb-6">
+                    <img
+                      src={file.fileURL}
+                      alt={file.fileName}
+                      className="max-w-full h-auto rounded-lg border border-gray-200"
+                    />
+                  </div>
+                )}
+
+                <button
+                  onClick={handleDownload}
+                  className="w-full rounded-lg bg-blue-600 px-6 py-4 font-semibold text-white hover:bg-blue-700 transition"
+                >
+                  Download File
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "../../../../auth";
 import { getAdminDb } from "../../../../firebaseAdmin";
 import { FILE_ACTIONS, logFileAction } from "../../../../utils/fileAccessLog";
+import protectedFileAccess from "../../../../utils/protectedFileAccess";
 
 export const runtime = "nodejs";
 
@@ -47,17 +48,28 @@ export async function GET(request, { params }) {
       );
     }
 
-    await logFileAction({
-      fileId: shareData.fileId,
-      actorUserId: session.user.id,
-      actorEmail: session.user.email,
-      action: FILE_ACTIONS.VIEW,
-    });
+    const isUnlocked =
+      !shareData.sharePassword ||
+      request.cookies.get(
+        protectedFileAccess.getSharedUnlockCookieName(shareId)
+      )?.value === "1";
 
-    return NextResponse.json({
-      share: shareData,
-      file: fileSnap.data(),
-    });
+    if (isUnlocked) {
+      await logFileAction({
+        fileId: shareData.fileId,
+        actorUserId: session.user.id,
+        actorEmail: session.user.email,
+        action: FILE_ACTIONS.VIEW,
+      });
+    }
+
+    return NextResponse.json(
+      protectedFileAccess.buildSharedFileResponse({
+        share: shareData,
+        file: fileSnap.data(),
+        unlocked: isUnlocked,
+      })
+    );
   } catch (error) {
     console.error("GET /api/shared-files/[shareId] failed:", error);
     return NextResponse.json(

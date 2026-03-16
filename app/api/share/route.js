@@ -20,7 +20,7 @@ export async function POST(request) {
       );
     }
 
-    const { fileId, recipientEmail } = await request.json();
+    const { fileId, recipientEmail, sharePassword } = await request.json();
     if (!fileId || !recipientEmail) {
       return NextResponse.json(
         { error: "Missing required fields." },
@@ -87,6 +87,9 @@ export async function POST(request) {
       ownerName: sender.name || fileData.userName || "",
       recipientUserId: recipient.id,
       recipientEmail: recipient.email,
+      sharePassword: typeof sharePassword === "string" ? sharePassword : "",
+      sharePasswordFailedAttempts: 0,
+      sharePasswordLockedUntil: null,
       sharedAt,
     });
 
