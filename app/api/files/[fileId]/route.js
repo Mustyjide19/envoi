@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "../../../../auth";
 import { getAdminDb } from "../../../../firebaseAdmin";
 import { FILE_ACTIONS, logFileAction } from "../../../../utils/fileAccessLog";
+import shareLinkExpiry from "../../../../utils/shareLinkExpiry";
 
 export const runtime = "nodejs";
 
@@ -74,9 +75,16 @@ export async function PATCH(request, context) {
 
     const body = await request.json();
     const password = typeof body?.password === "string" ? body.password : "";
+    const linkExpiryOption =
+      typeof body?.linkExpiryOption === "string" ? body.linkExpiryOption : "";
     const hadPassword = !!result.file.password;
+    const resolvedExpiry = shareLinkExpiry.resolveShareLinkExpiry(linkExpiryOption);
 
-    await result.fileSnap.ref.update({ password });
+    await result.fileSnap.ref.update({
+      password,
+      linkExpiryOption: resolvedExpiry.linkExpiryOption,
+      linkExpiresAt: resolvedExpiry.linkExpiresAt,
+    });
 
     if (hadPassword && !password) {
       await logFileAction({
@@ -92,6 +100,8 @@ export async function PATCH(request, context) {
       file: {
         ...result.file,
         password,
+        linkExpiryOption: resolvedExpiry.linkExpiryOption,
+        linkExpiresAt: resolvedExpiry.linkExpiresAt,
       },
     });
   } catch (error) {

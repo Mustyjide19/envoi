@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminDb } from "../../../../firebaseAdmin";
 import protectedFileAccess from "../../../../utils/protectedFileAccess";
+import shareLinkExpiry from "../../../../utils/shareLinkExpiry";
 
 export const runtime = "nodejs";
 
@@ -18,6 +19,13 @@ export async function GET(request, context) {
     }
 
     const file = fileSnap.data();
+    if (shareLinkExpiry.isShareLinkExpired(file.linkExpiresAt)) {
+      return NextResponse.json(
+        { error: "This share link has expired.", code: "LINK_EXPIRED" },
+        { status: 410 }
+      );
+    }
+
     const isUnlocked =
       !file.password ||
       request.cookies.get(

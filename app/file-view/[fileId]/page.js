@@ -13,6 +13,7 @@ export default function FileViewPage({ params }) {
   const [passwordError, setPasswordError] = useState("");
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [isUnlocking, setIsUnlocking] = useState(false);
+  const [isExpired, setIsExpired] = useState(false);
 
   useEffect(() => {
     params.then((resolvedParams) => {
@@ -35,7 +36,16 @@ export default function FileViewPage({ params }) {
         const fileData = await response.json();
         setFile(fileData);
         setIsUnlocked(!!fileData.unlocked || !fileData.passwordProtected);
+        setIsExpired(false);
       } else {
+        const data = await response.json();
+
+        if (response.status === 410 || data?.code === "LINK_EXPIRED") {
+          setIsExpired(true);
+          setFile(null);
+          return;
+        }
+
         alert("File not found or has been deleted");
         router.push("/");
       }
@@ -63,6 +73,12 @@ export default function FileViewPage({ params }) {
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 410 || data?.code === "LINK_EXPIRED") {
+          setIsExpired(true);
+          setFile(null);
+          setPassword("");
+          return;
+        }
         setPasswordError(data?.error || "Incorrect password. Please try again.");
         setPassword("");
         return;
@@ -93,6 +109,22 @@ export default function FileViewPage({ params }) {
   }
 
   if (!file) {
+    if (isExpired) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+          <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Link Expired</h2>
+            <p className="text-gray-600">This share link is no longer available.</p>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">

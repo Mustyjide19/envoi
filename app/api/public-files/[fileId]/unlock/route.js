@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAdminDb } from "../../../../../firebaseAdmin";
 import passwordAttemptLimiter from "../../../../../utils/passwordAttemptLimiter";
 import protectedFileAccess from "../../../../../utils/protectedFileAccess";
+import shareLinkExpiry from "../../../../../utils/shareLinkExpiry";
 
 export const runtime = "nodejs";
 
@@ -24,6 +25,13 @@ export async function POST(request, context) {
 
     const file = fileSnap.data();
     const now = Date.now();
+
+    if (shareLinkExpiry.isShareLinkExpired(file.linkExpiresAt, now)) {
+      return NextResponse.json(
+        { error: "This share link has expired.", code: "LINK_EXPIRED" },
+        { status: 410 }
+      );
+    }
 
     if (!file.password) {
       return NextResponse.json({ ok: true });

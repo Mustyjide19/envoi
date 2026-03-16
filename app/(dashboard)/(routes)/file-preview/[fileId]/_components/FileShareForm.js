@@ -1,7 +1,8 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { checkPasswordStrength } from "../../../../../../utils/passwordStrength";
+import shareLinkExpiry from "../../../../../../utils/shareLinkExpiry";
 
 function FileShareForm({ file, onPasswordSave }) {
   const { data: session } = useSession();
@@ -13,6 +14,9 @@ function FileShareForm({ file, onPasswordSave }) {
   const [directShareEmail, setDirectShareEmail] = useState("");
   const [directSharePassword, setDirectSharePassword] = useState("");
   const [showDirectSharePassword, setShowDirectSharePassword] = useState(false);
+  const [linkExpiryOption, setLinkExpiryOption] = useState(
+    shareLinkExpiry.SHARE_LINK_EXPIRY_OPTIONS.NEVER
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isDirectSharing, setIsDirectSharing] = useState(false);
@@ -32,6 +36,10 @@ function FileShareForm({ file, onPasswordSave }) {
         ? "66%"
         : "33%";
 
+  useEffect(() => {
+    setLinkExpiryOption(file?.linkExpiryOption || shareLinkExpiry.SHARE_LINK_EXPIRY_OPTIONS.NEVER);
+  }, [file?.linkExpiryOption]);
+
   const handleSavePassword = async () => {
     if (!file?.id) return;
     if (!isVerified) {
@@ -48,6 +56,7 @@ function FileShareForm({ file, onPasswordSave }) {
         },
         body: JSON.stringify({
           password: enablePassword ? password : "",
+          linkExpiryOption,
         }),
       });
       const data = await response.json();
@@ -259,6 +268,35 @@ function FileShareForm({ file, onPasswordSave }) {
               />
             </svg>
           </button>
+        </div>
+        <div className="mt-3">
+          <label className="app-text mb-2 block text-sm font-semibold">
+            Link Expiry
+          </label>
+          <select
+            value={linkExpiryOption}
+            onChange={(e) => setLinkExpiryOption(e.target.value)}
+            disabled={!isVerified || isSaving}
+            className="app-surface-muted app-text w-full rounded-lg border px-4 py-3"
+          >
+            <option value={shareLinkExpiry.SHARE_LINK_EXPIRY_OPTIONS.NEVER}>
+              No expiry
+            </option>
+            <option value={shareLinkExpiry.SHARE_LINK_EXPIRY_OPTIONS.ONE_HOUR}>
+              1 hour
+            </option>
+            <option value={shareLinkExpiry.SHARE_LINK_EXPIRY_OPTIONS.TWENTY_FOUR_HOURS}>
+              24 hours
+            </option>
+            <option value={shareLinkExpiry.SHARE_LINK_EXPIRY_OPTIONS.SEVEN_DAYS}>
+              7 days
+            </option>
+          </select>
+          {file?.linkExpiresAt && linkExpiryOption && (
+            <p className="app-text-muted mt-2 text-xs">
+              Expires {new Date(file.linkExpiresAt).toLocaleString()}
+            </p>
+          )}
         </div>
       </div>
 
