@@ -3,6 +3,10 @@ import { getAdminDb } from "../../../../../firebaseAdmin";
 import passwordAttemptLimiter from "../../../../../utils/passwordAttemptLimiter";
 import protectedFileAccess from "../../../../../utils/protectedFileAccess";
 import shareLinkExpiry from "../../../../../utils/shareLinkExpiry";
+import {
+  logSecurityEvent,
+  SECURITY_EVENT_TYPES,
+} from "../../../../../utils/securityEventLog";
 
 export const runtime = "nodejs";
 
@@ -27,6 +31,10 @@ export async function POST(request, context) {
     const now = Date.now();
 
     if (shareLinkExpiry.isShareLinkExpired(file.linkExpiresAt, now)) {
+      await logSecurityEvent({
+        eventType: SECURITY_EVENT_TYPES.PUBLIC_LINK_EXPIRED_ACCESS,
+        fileId,
+      });
       return NextResponse.json(
         { error: "This share link has expired.", code: "LINK_EXPIRED" },
         { status: 410 }
@@ -38,6 +46,10 @@ export async function POST(request, context) {
     }
 
     if (passwordAttemptLimiter.isLocked(file.passwordLockedUntil, now)) {
+      await logSecurityEvent({
+        eventType: SECURITY_EVENT_TYPES.PASSWORD_BLOCKED,
+        fileId,
+      });
       return NextResponse.json(
         { error: passwordAttemptLimiter.getBlockedMessage() },
         { status: 429 }
@@ -69,6 +81,13 @@ export async function POST(request, context) {
     await fileRef.update({
       passwordFailedAttempts: attemptState.failedAttempts,
       passwordLockedUntil: attemptState.lockedUntil,
+    });
+
+    await logSecurityEvent({
+      eventType: attemptState.blocked
+        ? SECURITY_EVENT_TYPES.PASSWORD_BLOCKED
+        : SECURITY_EVENT_TYPES.PASSWORD_FAILED,
+      fileId,
     });
 
     return NextResponse.json(

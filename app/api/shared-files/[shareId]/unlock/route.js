@@ -5,6 +5,10 @@ import { getAdminDb } from "../../../../../firebaseAdmin";
 import passwordAttemptLimiter from "../../../../../utils/passwordAttemptLimiter";
 import protectedFileAccess from "../../../../../utils/protectedFileAccess";
 import shareLinkExpiry from "../../../../../utils/shareLinkExpiry";
+import {
+  logSecurityEvent,
+  SECURITY_EVENT_TYPES,
+} from "../../../../../utils/securityEventLog";
 
 export const runtime = "nodejs";
 
@@ -35,6 +39,13 @@ export async function POST(request, { params }) {
     const share = shareSnap.data();
     const now = Date.now();
     if (shareLinkExpiry.isShareLinkExpired(share.shareExpiresAt, now)) {
+      await logSecurityEvent({
+        eventType: SECURITY_EVENT_TYPES.SHARED_LINK_EXPIRED_ACCESS,
+        fileId: share.fileId,
+        shareId,
+        actorUserId: session.user.id,
+        actorEmail: session.user.email,
+      });
       return NextResponse.json(
         { error: "This shared file has expired.", code: "SHARE_EXPIRED" },
         { status: 410 }
@@ -59,6 +70,13 @@ export async function POST(request, { params }) {
     if (
       passwordAttemptLimiter.isLocked(share.sharePasswordLockedUntil, now)
     ) {
+      await logSecurityEvent({
+        eventType: SECURITY_EVENT_TYPES.PASSWORD_BLOCKED,
+        fileId: share.fileId,
+        shareId,
+        actorUserId: session.user.id,
+        actorEmail: session.user.email,
+      });
       return NextResponse.json(
         { error: passwordAttemptLimiter.getBlockedMessage() },
         { status: 429 }
@@ -97,6 +115,16 @@ export async function POST(request, { params }) {
     await shareRef.update({
       sharePasswordFailedAttempts: attemptState.failedAttempts,
       sharePasswordLockedUntil: attemptState.lockedUntil,
+    });
+
+    await logSecurityEvent({
+      eventType: attemptState.blocked
+        ? SECURITY_EVENT_TYPES.PASSWORD_BLOCKED
+        : SECURITY_EVENT_TYPES.PASSWORD_FAILED,
+      fileId: share.fileId,
+      shareId,
+      actorUserId: session.user.id,
+      actorEmail: session.user.email,
     });
 
     return NextResponse.json(

@@ -4,6 +4,10 @@ import { getAdminDb } from "../../../../firebaseAdmin";
 import { FILE_ACTIONS, logFileAction } from "../../../../utils/fileAccessLog";
 import protectedFileAccess from "../../../../utils/protectedFileAccess";
 import shareLinkExpiry from "../../../../utils/shareLinkExpiry";
+import {
+  logSecurityEvent,
+  SECURITY_EVENT_TYPES,
+} from "../../../../utils/securityEventLog";
 
 export const runtime = "nodejs";
 
@@ -31,6 +35,13 @@ export async function GET(request, { params }) {
 
     const shareData = shareSnap.data();
     if (shareLinkExpiry.isShareLinkExpired(shareData.shareExpiresAt)) {
+      await logSecurityEvent({
+        eventType: SECURITY_EVENT_TYPES.SHARED_LINK_EXPIRED_ACCESS,
+        fileId: shareData.fileId,
+        shareId,
+        actorUserId: session.user.id,
+        actorEmail: session.user.email,
+      });
       return NextResponse.json(
         { error: "This shared file has expired.", code: "SHARE_EXPIRED" },
         { status: 410 }

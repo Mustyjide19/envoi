@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { getAdminDb } from "../../../../firebaseAdmin";
 import protectedFileAccess from "../../../../utils/protectedFileAccess";
 import shareLinkExpiry from "../../../../utils/shareLinkExpiry";
+import {
+  logSecurityEvent,
+  SECURITY_EVENT_TYPES,
+} from "../../../../utils/securityEventLog";
 
 export const runtime = "nodejs";
 
@@ -20,6 +24,10 @@ export async function GET(request, context) {
 
     const file = fileSnap.data();
     if (shareLinkExpiry.isShareLinkExpired(file.linkExpiresAt)) {
+      await logSecurityEvent({
+        eventType: SECURITY_EVENT_TYPES.PUBLIC_LINK_EXPIRED_ACCESS,
+        fileId,
+      });
       return NextResponse.json(
         { error: "This share link has expired.", code: "LINK_EXPIRED" },
         { status: 410 }
