@@ -3,6 +3,7 @@ import { FieldPath } from "firebase-admin/firestore";
 import { auth } from "../../../auth";
 import { getAdminDb } from "../../../firebaseAdmin";
 import { FILE_ACTIONS, logFileAction } from "../../../utils/fileAccessLog";
+import sensitivityLabels from "../../../utils/sensitivityLabels";
 
 export const runtime = "nodejs";
 
@@ -117,11 +118,31 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { id, fileName, fileType, fileSize, fileURL, shortUrl, description, tags } = body || {};
+    const {
+      id,
+      fileName,
+      fileType,
+      fileSize,
+      fileURL,
+      shortUrl,
+      description,
+      tags,
+      sensitivityLabel,
+    } = body || {};
 
     if (!id || !fileName || !fileURL) {
       return NextResponse.json(
         { error: "Missing required file metadata." },
+        { status: 400 }
+      );
+    }
+
+    const normalizedSensitivityLabel =
+      sensitivityLabels.normalizeSensitivityLabel(sensitivityLabel);
+
+    if (!normalizedSensitivityLabel) {
+      return NextResponse.json(
+        { error: "Sensitivity label is required." },
         { status: 400 }
       );
     }
@@ -136,6 +157,7 @@ export async function POST(request) {
       tags: Array.isArray(tags)
         ? [...new Set(tags.map((tag) => String(tag).trim()).filter(Boolean))].slice(0, 5)
         : [],
+      sensitivityLabel: normalizedSensitivityLabel,
       userEmail: session.user.email,
       userName: session.user.name || "",
       userVerified: !!session.user.isVerified,

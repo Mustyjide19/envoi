@@ -332,6 +332,17 @@ export default function FilesPage() {
                   </div>
                 )}
 
+                {file.sensitivityLabel && (
+                  <div className="mb-4">
+                    <p className="app-text-muted mb-2 text-xs font-medium uppercase tracking-wide">
+                      Sensitivity
+                    </p>
+                    <span className="app-accent-badge rounded-full px-3 py-1 text-xs font-semibold">
+                      {file.sensitivityLabel}
+                    </span>
+                  </div>
+                )}
+
                 {activeTab === "shared" && (
                   <div className="app-surface-muted mb-4 rounded-lg border px-3 py-2">
                     <p className="app-text-muted text-xs font-medium uppercase tracking-wide">

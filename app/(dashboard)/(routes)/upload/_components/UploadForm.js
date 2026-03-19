@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import AlertMessage from './AlertMessage';
 import FilePreview from './FilePreview';
 import fileValidation from '../../../../../utils/fileValidation';
+import sensitivityLabels from '../../../../../utils/sensitivityLabels';
 
 function UploadForm({ uploadFile }) {
   const { data: session, status } = useSession();
@@ -13,6 +14,7 @@ function UploadForm({ uploadFile }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState('');
+  const [sensitivityLabel, setSensitivityLabel] = useState('');
   const [alertMsg, setAlertMsg] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -48,6 +50,13 @@ function UploadForm({ uploadFile }) {
   const handleUpload = async () => {
     if (!selectedFile || !uploadFile) return;
 
+    if (!sensitivityLabels.normalizeSensitivityLabel(sensitivityLabel)) {
+      setErrorMessage('Please select a sensitivity label.');
+      setShowError(true);
+      setTimeout(() => setShowError(false), 4000);
+      return;
+    }
+
     const validationResult = fileValidation.validateUploadFile(selectedFile);
     if (!validationResult.ok) {
       setErrorMessage(validationResult.message);
@@ -63,13 +72,14 @@ function UploadForm({ uploadFile }) {
     setShowError(false);
 
     try {
-      await uploadFile(selectedFile, description.trim(), tags);
+      await uploadFile(selectedFile, description.trim(), tags, sensitivityLabel);
 
       setIsUploading(false);
       setShowSuccess(true);
       setSelectedFile(null);
       setDescription('');
       setTags('');
+      setSensitivityLabel('');
       setAlertMsg('');
 
       if (fileInputRef.current) {
@@ -181,6 +191,36 @@ function UploadForm({ uploadFile }) {
 
         <div className="w-full max-w-2xl">
           <label
+            htmlFor="file-sensitivity"
+            className="app-text mb-2 block text-sm font-semibold"
+          >
+            Sensitivity Label
+          </label>
+          <select
+            id="file-sensitivity"
+            value={sensitivityLabel}
+            onChange={(e) => setSensitivityLabel(e.target.value)}
+            disabled={isUploading}
+            className="w-full rounded-2xl border bg-white px-4 py-3 text-sm text-gray-700 shadow-sm outline-none transition disabled:opacity-50"
+            style={{
+              borderColor: "var(--accent-soft-border)",
+              boxShadow: "0 1px 2px rgb(15 23 42 / 0.08)",
+            }}
+          >
+            <option value="">Select sensitivity</option>
+            {sensitivityLabels.SENSITIVITY_LABELS.map((label) => (
+              <option key={label} value={label}>
+                {label}
+              </option>
+            ))}
+          </select>
+          <p className="mt-2 text-xs text-gray-500">
+            A sensitivity label is required before upload.
+          </p>
+        </div>
+
+        <div className="w-full max-w-2xl">
+          <label
             htmlFor="file-description"
             className="app-text mb-2 block text-sm font-semibold"
           >
@@ -233,9 +273,9 @@ function UploadForm({ uploadFile }) {
         <button
           type="button"
           onClick={handleUpload}
-          disabled={!selectedFile || isUploading}
+          disabled={!selectedFile || isUploading || !sensitivityLabel}
           className={`rounded-xl px-8 py-3 text-base font-medium transition-colors ${
-            selectedFile && !isUploading
+            selectedFile && !isUploading && sensitivityLabel
               ? 'app-accent-btn'
               : 'bg-gray-300 text-gray-600 cursor-not-allowed'
           }`}

@@ -52,6 +52,13 @@ function FileInfo({ file }) {
         <p className="app-text-muted text-sm">
           {file.fileType} / {(file.fileSize / 1024).toFixed(2)} KB
         </p>
+        {file.sensitivityLabel && (
+          <div className="mt-3">
+            <span className="app-accent-badge rounded-full px-3 py-1 text-xs font-semibold">
+              {file.sensitivityLabel}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

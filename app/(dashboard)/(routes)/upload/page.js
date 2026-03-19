@@ -12,6 +12,7 @@ import {
 } from "firebase/storage";
 import { generateRandomString } from "../../../_utils/GenerateRandomString";
 import fileValidation from "../../../../utils/fileValidation";
+import sensitivityLabels from "../../../../utils/sensitivityLabels";
 
 function Upload() {
   const { status } = useSession();
@@ -36,7 +37,12 @@ function Upload() {
     return [...new Set(cleanedTags)];
   };
 
-  const uploadFile = async (file, description = "", rawTags = "") => {
+  const uploadFile = async (
+    file,
+    description = "",
+    rawTags = "",
+    sensitivityLabel = ""
+  ) => {
     if (!file || status !== "authenticated") return;
 
     const validationResult = fileValidation.validateUploadFile(file);
@@ -66,12 +72,26 @@ function Upload() {
       },
       async () => {
         const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-        await saveInfo(fileName, file, downloadURL, description, normalizeTags(rawTags));
+        await saveInfo(
+          fileName,
+          file,
+          downloadURL,
+          description,
+          normalizeTags(rawTags),
+          sensitivityLabels.normalizeSensitivityLabel(sensitivityLabel)
+        );
       }
     );
   };
 
-  const saveInfo = async (fileName, file, downloadURL, description = "", tags = []) => {
+  const saveInfo = async (
+    fileName,
+    file,
+    downloadURL,
+    description = "",
+    tags = [],
+    sensitivityLabel = ""
+  ) => {
     const docId = generateRandomString().toString();
 
     try {
@@ -88,6 +108,7 @@ function Upload() {
           fileURL: downloadURL,
           description,
           tags,
+          sensitivityLabel,
           shortUrl: `${process.env.NEXT_PUBLIC_BASE_URL || ""}${docId}`,
         }),
       });
