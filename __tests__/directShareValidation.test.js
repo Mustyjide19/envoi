@@ -42,23 +42,6 @@ describe("directShareValidation", () => {
     });
   });
 
-  test("blocks duplicates", () => {
-    expect(
-      validateDirectShare({
-        senderVerified: true,
-        senderEmail: "owner@example.com",
-        ownerEmail: "owner@example.com",
-        recipientEmail: "target@example.com",
-        recipientUserId: "user_2",
-        existingShare: true,
-      })
-    ).toEqual({
-      ok: false,
-      code: "ALREADY_SHARED",
-      message: "This file is already shared with that user.",
-    });
-  });
-
   test("passes valid direct share", () => {
     expect(
       validateDirectShare({
@@ -67,7 +50,6 @@ describe("directShareValidation", () => {
         ownerEmail: "owner@example.com",
         recipientEmail: "target@example.com",
         recipientUserId: "user_2",
-        existingShare: false,
       })
     ).toEqual({ ok: true });
   });

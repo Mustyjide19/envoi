@@ -21,14 +21,15 @@ function buildSharedFileResponse({ share, file, unlocked }) {
     share: {
       ...share,
       sharePassword: undefined,
-      passwordProtected: !!share.sharePassword,
+      sharePasswordHash: undefined,
+      passwordProtected: !!share.sharePasswordHash || !!share.sharePassword,
       unlocked,
     },
     file: {
       ...file,
       fileURL: unlocked ? file.fileURL : undefined,
     },
-    passwordProtected: !!share.sharePassword,
+    passwordProtected: !!share.sharePasswordHash || !!share.sharePassword,
     unlocked,
   };
 }

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import UserAvatar from "../../_components/UserAvatar";
+import shareLinkExpiry from "../../../utils/shareLinkExpiry";
 
 export default function SharedFilePage({ params }) {
   const router = useRouter();
@@ -15,6 +16,8 @@ export default function SharedFilePage({ params }) {
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [isUnlocking, setIsUnlocking] = useState(false);
+  const [isExpired, setIsExpired] = useState(false);
+  const [currentTime, setCurrentTime] = useState(Date.now());
 
   useEffect(() => {
     params.then((resolvedParams) => {
@@ -34,6 +37,18 @@ export default function SharedFilePage({ params }) {
     void loadSharedFile();
   }, [shareId, status]);
 
+  useEffect(() => {
+    if (!sharedFile?.share?.shareExpiresAt || isExpired) {
+      return undefined;
+    }
+
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [sharedFile?.share?.shareExpiresAt, isExpired]);
+
   const loadSharedFile = async () => {
     setIsLoading(true);
     setError("");
@@ -44,11 +59,17 @@ export default function SharedFilePage({ params }) {
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 410 || data?.code === "SHARE_EXPIRED") {
+          setIsExpired(true);
+          setSharedFile(null);
+          return;
+        }
         setError(data?.error || "Unable to load shared file.");
         setSharedFile(null);
         return;
       }
 
+      setIsExpired(false);
       setSharedFile(data);
     } catch {
       setError("Unable to load shared file.");
@@ -73,6 +94,12 @@ export default function SharedFilePage({ params }) {
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 410 || data?.code === "SHARE_EXPIRED") {
+          setIsExpired(true);
+          setSharedFile(null);
+          setPassword("");
+          return;
+        }
         setPasswordError(data?.error || "Incorrect password. Please try again.");
         setPassword("");
         return;
@@ -87,6 +114,23 @@ export default function SharedFilePage({ params }) {
     }
   };
 
+  const file = sharedFile?.file;
+  const share = sharedFile?.share;
+  const isImage = file?.fileType?.startsWith("image/");
+  const expiryNotice = useMemo(() => {
+    if (!share?.shareExpiresAt) {
+      return null;
+    }
+
+    return {
+      exactTime: new Date(share.shareExpiresAt).toLocaleString(),
+      relative: shareLinkExpiry.formatShareLinkExpiryCountdown(
+        share.shareExpiresAt,
+        currentTime
+      ),
+    };
+  }, [currentTime, share?.shareExpiresAt]);
+
   if (status === "loading" || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -96,6 +140,17 @@ export default function SharedFilePage({ params }) {
   }
 
   if (error || !sharedFile?.file) {
+    if (isExpired) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-8 text-center shadow-sm border border-gray-200">
+            <h1 className="mb-2 text-2xl font-bold text-gray-900">Shared File Expired</h1>
+            <p className="text-gray-600">This shared file is no longer available.</p>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
         <div className="w-full max-w-md rounded-xl bg-white p-8 text-center shadow-sm border border-gray-200">
@@ -105,10 +160,6 @@ export default function SharedFilePage({ params }) {
       </div>
     );
   }
-
-  const file = sharedFile.file;
-  const share = sharedFile.share;
-  const isImage = file.fileType?.startsWith("image/");
 
   const handleDownload = async () => {
     try {
@@ -154,6 +205,17 @@ export default function SharedFilePage({ params }) {
                 </div>
               </div>
             </div>
+
+            {expiryNotice && (
+              <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+                <p className="text-sm font-medium text-blue-900">
+                  {expiryNotice.relative}
+                </p>
+                <p className="mt-1 text-sm text-blue-800">
+                  Expires at {expiryNotice.exactTime}
+                </p>
+              </div>
+            )}
 
             {sharedFile.passwordProtected && !sharedFile.unlocked ? (
               <>

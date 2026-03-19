@@ -8,7 +8,6 @@ function validateDirectShare({
   ownerEmail,
   recipientEmail,
   recipientUserId,
-  existingShare,
 }) {
   const normalizedSenderEmail = normalizeEmail(senderEmail);
   const normalizedOwnerEmail = normalizeEmail(ownerEmail);
@@ -51,14 +50,6 @@ function validateDirectShare({
       ok: false,
       code: "SELF_SHARE",
       message: "You cannot share a file with yourself.",
-    };
-  }
-
-  if (existingShare) {
-    return {
-      ok: false,
-      code: "ALREADY_SHARED",
-      message: "This file is already shared with that user.",
     };
   }
 

@@ -1,10 +1,27 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 
 export default function VerifyPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl p-8 shadow-sm">
+            <h1 className="text-2xl font-bold text-slate-900 mb-3">Verify Account</h1>
+            <p className="text-slate-600">Loading verification details...</p>
+          </div>
+        </div>
+      }
+    >
+      <VerifyPageContent />
+    </Suspense>
+  );
+}
+
+function VerifyPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();

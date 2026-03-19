@@ -14,6 +14,9 @@ function FileShareForm({ file, onPasswordSave }) {
   const [directShareEmail, setDirectShareEmail] = useState("");
   const [directSharePassword, setDirectSharePassword] = useState("");
   const [showDirectSharePassword, setShowDirectSharePassword] = useState(false);
+  const [directShareExpiryOption, setDirectShareExpiryOption] = useState(
+    shareLinkExpiry.SHARE_LINK_EXPIRY_OPTIONS.NEVER
+  );
   const [linkExpiryOption, setLinkExpiryOption] = useState(
     shareLinkExpiry.SHARE_LINK_EXPIRY_OPTIONS.NEVER
   );
@@ -156,6 +159,7 @@ function FileShareForm({ file, onPasswordSave }) {
           fileId: file?.id,
           recipientEmail: directShareEmail,
           sharePassword: directSharePassword,
+          shareExpiryOption: directShareExpiryOption,
         }),
       });
 
@@ -169,6 +173,7 @@ function FileShareForm({ file, onPasswordSave }) {
       setDirectShareMessage(data.message || "File shared successfully.");
       setDirectShareEmail("");
       setDirectSharePassword("");
+      setDirectShareExpiryOption(shareLinkExpiry.SHARE_LINK_EXPIRY_OPTIONS.NEVER);
     } catch {
       setDirectShareError("Failed to share file.");
     } finally {
@@ -222,6 +227,25 @@ function FileShareForm({ file, onPasswordSave }) {
             )}
           </button>
         </div>
+        <select
+          value={directShareExpiryOption}
+          onChange={(e) => setDirectShareExpiryOption(e.target.value)}
+          disabled={!isVerified || isDirectSharing}
+          className="app-surface-muted app-text mb-3 w-full rounded-lg border px-4 py-3"
+        >
+          <option value={shareLinkExpiry.SHARE_LINK_EXPIRY_OPTIONS.NEVER}>
+            No share expiry
+          </option>
+          <option value={shareLinkExpiry.SHARE_LINK_EXPIRY_OPTIONS.ONE_HOUR}>
+            1 hour
+          </option>
+          <option value={shareLinkExpiry.SHARE_LINK_EXPIRY_OPTIONS.TWENTY_FOUR_HOURS}>
+            24 hours
+          </option>
+          <option value={shareLinkExpiry.SHARE_LINK_EXPIRY_OPTIONS.SEVEN_DAYS}>
+            7 days
+          </option>
+        </select>
         <button
           onClick={handleDirectShare}
           disabled={!isVerified || isDirectSharing || !directShareEmail}

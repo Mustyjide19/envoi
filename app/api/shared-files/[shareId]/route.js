@@ -3,6 +3,7 @@ import { auth } from "../../../../auth";
 import { getAdminDb } from "../../../../firebaseAdmin";
 import { FILE_ACTIONS, logFileAction } from "../../../../utils/fileAccessLog";
 import protectedFileAccess from "../../../../utils/protectedFileAccess";
+import shareLinkExpiry from "../../../../utils/shareLinkExpiry";
 
 export const runtime = "nodejs";
 
@@ -29,6 +30,13 @@ export async function GET(request, { params }) {
     }
 
     const shareData = shareSnap.data();
+    if (shareLinkExpiry.isShareLinkExpired(shareData.shareExpiresAt)) {
+      return NextResponse.json(
+        { error: "This shared file has expired.", code: "SHARE_EXPIRED" },
+        { status: 410 }
+      );
+    }
+
     const recipientMatches =
       shareData.recipientUserId === session.user.id ||
       shareData.recipientEmail === session.user.email;
@@ -49,7 +57,7 @@ export async function GET(request, { params }) {
     }
 
     const isUnlocked =
-      !shareData.sharePassword ||
+      (!shareData.sharePasswordHash && !shareData.sharePassword) ||
       request.cookies.get(
         protectedFileAccess.getSharedUnlockCookieName(shareId)
       )?.value === "1";

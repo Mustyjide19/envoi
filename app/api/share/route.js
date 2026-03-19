@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 import { auth } from "../../../auth";
 import { getAdminDb } from "../../../firebaseAdmin";
 import directShareValidation from "../../../utils/directShareValidation";
 import { FILE_ACTIONS, logFileAction } from "../../../utils/fileAccessLog";
+import shareLinkExpiry from "../../../utils/shareLinkExpiry";
 
 const prisma = new PrismaClient();
 export const runtime = "nodejs";
@@ -20,7 +22,12 @@ export async function POST(request) {
       );
     }
 
-    const { fileId, recipientEmail, sharePassword } = await request.json();
+    const {
+      fileId,
+      recipientEmail,
+      sharePassword,
+      shareExpiryOption,
+    } = await request.json();
     if (!fileId || !recipientEmail) {
       return NextResponse.json(
         { error: "Missing required fields." },
@@ -58,7 +65,6 @@ export async function POST(request) {
       ownerEmail: fileData.userEmail || "",
       recipientEmail,
       recipientUserId: recipient?.id,
-      existingShare: existingShareSnapshot.exists,
     });
 
     if (!validation.ok) {
@@ -78,6 +84,15 @@ export async function POST(request) {
     }
 
     const sharedAt = new Date().toISOString();
+    const resolvedExpiry = shareLinkExpiry.resolveShareLinkExpiry(
+      typeof shareExpiryOption === "string" ? shareExpiryOption : ""
+    );
+    const normalizedSharePassword =
+      typeof sharePassword === "string" ? sharePassword.trim() : "";
+    const sharePasswordHash = normalizedSharePassword
+      ? await bcrypt.hash(normalizedSharePassword, 10)
+      : "";
+    const isUpdating = existingShareSnapshot.exists;
 
     await adminDb.collection("sharedFiles").doc(shareId).set({
       id: shareId,
@@ -87,11 +102,17 @@ export async function POST(request) {
       ownerName: sender.name || fileData.userName || "",
       recipientUserId: recipient.id,
       recipientEmail: recipient.email,
-      sharePassword: typeof sharePassword === "string" ? sharePassword : "",
+      sharePassword: "",
+      sharePasswordHash,
+      shareExpiryOption: resolvedExpiry.linkExpiryOption,
+      shareExpiresAt: resolvedExpiry.linkExpiresAt,
       sharePasswordFailedAttempts: 0,
       sharePasswordLockedUntil: null,
-      sharedAt,
-    });
+      sharedAt: existingShareSnapshot.exists
+        ? existingShareSnapshot.data().sharedAt || sharedAt
+        : sharedAt,
+      updatedAt: sharedAt,
+    }, { merge: true });
 
     await logFileAction({
       fileId,
@@ -102,7 +123,9 @@ export async function POST(request) {
 
     return NextResponse.json({
       success: true,
-      message: "File shared successfully.",
+      message: isUpdating
+        ? "Share updated successfully."
+        : "File shared successfully.",
       shareId,
     });
   } catch (error) {

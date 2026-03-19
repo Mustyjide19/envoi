@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import { auth } from "../../../../../auth";
 import { getAdminDb } from "../../../../../firebaseAdmin";
 import passwordAttemptLimiter from "../../../../../utils/passwordAttemptLimiter";
 import protectedFileAccess from "../../../../../utils/protectedFileAccess";
+import shareLinkExpiry from "../../../../../utils/shareLinkExpiry";
 
 export const runtime = "nodejs";
 
@@ -31,6 +33,14 @@ export async function POST(request, { params }) {
     }
 
     const share = shareSnap.data();
+    const now = Date.now();
+    if (shareLinkExpiry.isShareLinkExpired(share.shareExpiresAt, now)) {
+      return NextResponse.json(
+        { error: "This shared file has expired.", code: "SHARE_EXPIRED" },
+        { status: 410 }
+      );
+    }
+
     const recipientMatches =
       share.recipientUserId === session.user.id ||
       share.recipientEmail === session.user.email;
@@ -42,11 +52,10 @@ export async function POST(request, { params }) {
       );
     }
 
-    if (!share.sharePassword) {
+    if (!share.sharePasswordHash && !share.sharePassword) {
       return NextResponse.json({ ok: true });
     }
 
-    const now = Date.now();
     if (
       passwordAttemptLimiter.isLocked(share.sharePasswordLockedUntil, now)
     ) {
@@ -56,8 +65,13 @@ export async function POST(request, { params }) {
       );
     }
 
-    if (password === share.sharePassword) {
+    const passwordMatches = share.sharePasswordHash
+      ? await bcrypt.compare(password, share.sharePasswordHash)
+      : password === share.sharePassword;
+
+    if (passwordMatches) {
       await shareRef.update({
+        sharePassword: "",
         sharePasswordFailedAttempts: 0,
         sharePasswordLockedUntil: null,
       });
