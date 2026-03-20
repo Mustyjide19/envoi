@@ -1,4 +1,4 @@
-import { getAdminDb } from "../firebaseAdmin";
+import { adminDb } from "../firebaseAdmin";
 
 export const FILE_ACTIONS = {
   UPLOAD: "UPLOAD",
@@ -18,7 +18,6 @@ export async function logFileAction({
     return;
   }
 
-  const adminDb = getAdminDb();
   await adminDb.collection("fileAccessLogs").add({
     fileId,
     actorUserId: actorUserId || null,

@@ -110,7 +110,7 @@ function FileShareForm({ file, onPasswordSave }) {
         throw new Error(data.error || "Failed to send email");
       }
 
-      alert(`Email sent successfully to ${email}!`);
+      alert(data.message || `Email sent successfully to ${email}!`);
       setEmail("");
     } catch (error) {
       console.error("Error sending email:", error);

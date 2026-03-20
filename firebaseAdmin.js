@@ -1,107 +1,94 @@
 import { cert, getApps, initializeApp } from "firebase-admin/app";
-import { initializeFirestore } from "firebase-admin/firestore";
+import { getFirestore, initializeFirestore } from "firebase-admin/firestore";
 import fs from "node:fs";
 import path from "node:path";
 
 function normalizePrivateKey(privateKey) {
-  if (!privateKey) {
-    return privateKey;
+  if (!privateKey) return undefined;
+
+  let key = privateKey.trim();
+
+  if (/^["']/.test(key) && /["'],?$/.test(key)) {
+    key = key.replace(/^["']|["'],?$/g, "").trim();
   }
 
-  let normalizedKey = privateKey.trim();
-
-  if (
-    (normalizedKey.startsWith('"') && normalizedKey.endsWith('",')) ||
-    (normalizedKey.startsWith("'") && normalizedKey.endsWith("',"))
-  ) {
-    normalizedKey = normalizedKey.slice(1, -2).trim();
+  if (key.endsWith(",")) {
+    key = key.slice(0, -1).trim();
   }
 
-  if (
-    (normalizedKey.startsWith('"') && normalizedKey.endsWith('"')) ||
-    (normalizedKey.startsWith("'") && normalizedKey.endsWith("'"))
-  ) {
-    normalizedKey = normalizedKey.slice(1, -1);
-  }
-
-  if (normalizedKey.endsWith(",")) {
-    normalizedKey = normalizedKey.slice(0, -1).trim();
-  }
-
-  return normalizedKey.replace(/\\n/g, "\n");
+  return key.replace(/\\n/g, "\n");
 }
 
-function getServiceAccountPath() {
+function getServiceAccountFileConfig() {
   const configuredPath =
     process.env.FIREBASE_SERVICE_ACCOUNT_PATH ||
     process.env.GOOGLE_APPLICATION_CREDENTIALS;
-
-  if (!configuredPath) {
-    return null;
-  }
-
-  return path.isAbsolute(configuredPath)
-    ? configuredPath
-    : path.resolve(process.cwd(), configuredPath);
-}
-
-function loadServiceAccountFromFile() {
-  const serviceAccountPath = getServiceAccountPath();
-
-  if (!serviceAccountPath || !fs.existsSync(serviceAccountPath)) {
-    return null;
-  }
-
-  const serviceAccount = JSON.parse(
-    fs.readFileSync(serviceAccountPath, "utf8")
+  const defaultPath = path.resolve(
+    process.cwd(),
+    "secrets",
+    "firebase-admin.json"
   );
+  const serviceAccountPath =
+    configuredPath || (fs.existsSync(defaultPath) ? defaultPath : null);
+
+  if (!serviceAccountPath) {
+    return null;
+  }
+
+  const resolvedPath = path.isAbsolute(serviceAccountPath)
+    ? serviceAccountPath
+    : path.resolve(process.cwd(), serviceAccountPath);
+  const rawConfig = JSON.parse(fs.readFileSync(resolvedPath, "utf8"));
 
   return {
-    projectId: serviceAccount.project_id,
-    clientEmail: serviceAccount.client_email,
-    privateKey: normalizePrivateKey(serviceAccount.private_key),
+    projectId: rawConfig.project_id,
+    clientEmail: rawConfig.client_email,
+    privateKey: normalizePrivateKey(rawConfig.private_key),
   };
 }
 
-function getFirebaseAdminConfig() {
-  const fileCredentials = loadServiceAccountFromFile();
-  const projectId =
-    fileCredentials?.projectId ||
-    process.env.FIREBASE_PROJECT_ID ||
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+function initializeAdminApp() {
+  if (getApps().length > 0) return getApps()[0];
+
+  const fileConfig = getServiceAccountFileConfig();
+  const projectId = fileConfig?.projectId || process.env.FIREBASE_PROJECT_ID;
   const clientEmail =
-    fileCredentials?.clientEmail || process.env.FIREBASE_CLIENT_EMAIL;
+    fileConfig?.clientEmail || process.env.FIREBASE_CLIENT_EMAIL;
   const privateKey =
-    fileCredentials?.privateKey ||
+    fileConfig?.privateKey ||
     normalizePrivateKey(process.env.FIREBASE_PRIVATE_KEY);
 
   if (!projectId || !clientEmail || !privateKey) {
-    throw new Error("Firebase Admin credentials are not configured.");
+    throw new Error(
+      `Firebase Admin credentials missing: ${[
+        !projectId && "FIREBASE_PROJECT_ID",
+        !clientEmail && "FIREBASE_CLIENT_EMAIL",
+        !privateKey && "FIREBASE_PRIVATE_KEY",
+      ]
+        .filter(Boolean)
+        .join(", ")}`
+    );
   }
 
-  return {
-    credential: cert({
-      projectId,
-      clientEmail,
-      privateKey,
-    }),
+  return initializeApp({
+    credential: cert({ projectId, clientEmail, privateKey }),
     projectId,
     storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  };
+  });
 }
 
-let adminApp;
+const app = initializeAdminApp();
 let adminDb;
 
-function getAdminDb() {
-  if (!adminDb) {
-    adminApp = getApps()[0] || initializeApp(getFirebaseAdminConfig());
-    adminDb = initializeFirestore(adminApp, {
-      preferRest: true,
-    });
-  }
+try {
+  const shouldPreferRest =
+    process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
 
-  return adminDb;
+  adminDb = shouldPreferRest
+    ? initializeFirestore(app, { preferRest: true })
+    : getFirestore(app);
+} catch {
+  adminDb = getFirestore(app);
 }
 
-export { getAdminDb };
+export { adminDb };

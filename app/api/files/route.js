@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import { FieldPath } from "firebase-admin/firestore";
 import { auth } from "../../../auth";
-import { getAdminDb } from "../../../firebaseAdmin";
+import { adminDb } from "../../../firebaseAdmin";
 import { FILE_ACTIONS, logFileAction } from "../../../utils/fileAccessLog";
 import sensitivityLabels from "../../../utils/sensitivityLabels";
 
 export const runtime = "nodejs";
+
+const baseUrl =
+  process.env.APP_URL ||
+  process.env.NEXT_PUBLIC_APP_URL ||
+  "http://localhost:3000";
 
 function sortNewestFirst(items, fieldName) {
   return [...items].sort((a, b) => {
@@ -17,7 +22,6 @@ function sortNewestFirst(items, fieldName) {
 
 export async function GET() {
   try {
-    const adminDb = getAdminDb();
     const session = await auth();
 
     if (!session?.user?.email || !session?.user?.id) {
@@ -107,7 +111,6 @@ export async function GET() {
 
 export async function POST(request) {
   try {
-    const adminDb = getAdminDb();
     const session = await auth();
 
     if (!session?.user?.email) {
@@ -162,7 +165,7 @@ export async function POST(request) {
       userName: session.user.name || "",
       userVerified: !!session.user.isVerified,
       password: "",
-      shortUrl: shortUrl || `${process.env.NEXT_PUBLIC_BASE_URL || ""}${id}`,
+      shortUrl: shortUrl || `${baseUrl}/${id}`,
     });
 
     await logFileAction({

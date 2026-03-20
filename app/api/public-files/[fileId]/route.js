@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAdminDb } from "../../../../firebaseAdmin";
+import { adminDb } from "../../../../firebaseAdmin";
 import protectedFileAccess from "../../../../utils/protectedFileAccess";
 import shareLinkExpiry from "../../../../utils/shareLinkExpiry";
 import {
@@ -11,7 +11,6 @@ export const runtime = "nodejs";
 
 export async function GET(request, context) {
   try {
-    const adminDb = getAdminDb();
     const { fileId } = await context.params;
     const fileSnap = await adminDb.collection("uploadedFiles").doc(fileId).get();
 

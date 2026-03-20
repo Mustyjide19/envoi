@@ -5,47 +5,54 @@ import { PrismaClient } from "@prisma/client"
 import bcrypt from "bcryptjs"
 
 const prisma = new PrismaClient()
+const googleClientId = process.env.GOOGLE_CLIENT_ID?.trim()
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim()
+const providers = [
+  Credentials({
+    async authorize(credentials) {
+      if (!credentials?.email || !credentials?.password) {
+        throw new Error("Missing credentials")
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { email: credentials.email },
+      })
+
+      if (!user || !user.password) {
+        throw new Error("User not found")
+      }
+
+      const isValid = await bcrypt.compare(
+        credentials.password,
+        user.password
+      )
+
+      if (!isValid) {
+        throw new Error("Invalid password")
+      }
+
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        image: user.image,
+        isVerified: user.isVerified,
+      }
+    },
+  }),
+]
+
+if (googleClientId && googleClientSecret) {
+  providers.push(
+    Google({
+      clientId: googleClientId,
+      clientSecret: googleClientSecret,
+    })
+  )
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [
-    Credentials({
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Missing credentials")
-        }
-
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        })
-
-        if (!user || !user.password) {
-          throw new Error("User not found")
-        }
-
-        const isValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        )
-
-        if (!isValid) {
-          throw new Error("Invalid password")
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          image: user.image,
-          isVerified: user.isVerified,
-        }
-      },
-    }),
-
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    }),
-  ],
+  providers,
 
   session: {
     strategy: "jwt",

@@ -14,7 +14,11 @@ import {
 } from '@react-email/components';
 
 export const EmailTemplate = ({ senderName, fileName, fileId }) => {
-  const sharedUrl = `http://localhost:3000/file-view/${fileId}`;
+  const baseUrl =
+    process.env.APP_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "http://localhost:3000";
+  const sharedUrl = `${baseUrl}/file-view/${fileId}`;
   
   return (
     <Html>

@@ -1,4 +1,4 @@
-import { getAdminDb } from "../firebaseAdmin";
+import { adminDb } from "../firebaseAdmin";
 
 export const SECURITY_EVENT_TYPES = {
   PASSWORD_FAILED: "PASSWORD_FAILED",
@@ -18,7 +18,6 @@ export async function logSecurityEvent({
     return;
   }
 
-  const adminDb = getAdminDb();
   await adminDb.collection("securityEventLogs").add({
     eventType,
     fileId,

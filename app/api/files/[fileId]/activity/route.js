@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "../../../../../auth";
-import { getAdminDb } from "../../../../../firebaseAdmin";
+import { adminDb } from "../../../../../firebaseAdmin";
 
 export const runtime = "nodejs";
 
@@ -16,7 +16,6 @@ export async function GET(request, context) {
     }
 
     const { fileId } = await context.params;
-    const adminDb = getAdminDb();
     const fileSnap = await adminDb.collection("uploadedFiles").doc(fileId).get();
 
     if (!fileSnap.exists) {

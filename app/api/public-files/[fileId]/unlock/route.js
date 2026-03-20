@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAdminDb } from "../../../../../firebaseAdmin";
+import { adminDb } from "../../../../../firebaseAdmin";
 import passwordAttemptLimiter from "../../../../../utils/passwordAttemptLimiter";
 import protectedFileAccess from "../../../../../utils/protectedFileAccess";
 import shareLinkExpiry from "../../../../../utils/shareLinkExpiry";
@@ -12,7 +12,6 @@ export const runtime = "nodejs";
 
 export async function POST(request, context) {
   try {
-    const adminDb = getAdminDb();
     const { fileId } = await context.params;
     const body = await request.json();
     const password = typeof body?.password === "string" ? body.password : "";

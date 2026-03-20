@@ -22,6 +22,10 @@ function Upload() {
   const [fileId, setFileDocId] = useState();
   const [progress, setProgress] = useState(0);
   const [uploadCompleted, setUploadCompleted] = useState(false);
+  const baseUrl =
+    process.env.APP_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "http://localhost:3000";
 
   const normalizeTags = (rawTags = "") => {
     if (typeof rawTags !== "string") {
@@ -109,7 +113,7 @@ function Upload() {
           description,
           tags,
           sensitivityLabel,
-          shortUrl: `${process.env.NEXT_PUBLIC_BASE_URL || ""}${docId}`,
+          shortUrl: `${baseUrl}/${docId}`,
         }),
       });
 

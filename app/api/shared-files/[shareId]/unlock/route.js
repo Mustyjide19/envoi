@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { auth } from "../../../../../auth";
-import { getAdminDb } from "../../../../../firebaseAdmin";
+import { adminDb } from "../../../../../firebaseAdmin";
 import passwordAttemptLimiter from "../../../../../utils/passwordAttemptLimiter";
 import protectedFileAccess from "../../../../../utils/protectedFileAccess";
 import shareLinkExpiry from "../../../../../utils/shareLinkExpiry";
@@ -14,7 +14,6 @@ export const runtime = "nodejs";
 
 export async function POST(request, { params }) {
   try {
-    const adminDb = getAdminDb();
     const session = await auth();
 
     if (!session?.user?.id || !session?.user?.email) {

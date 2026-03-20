@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import { auth } from "../../../../auth";
-import { getAdminDb } from "../../../../firebaseAdmin";
+import { adminDb } from "../../../../firebaseAdmin";
 import { FILE_ACTIONS, logFileAction } from "../../../../utils/fileAccessLog";
 import shareLinkExpiry from "../../../../utils/shareLinkExpiry";
 
 export const runtime = "nodejs";
 
 async function getOwnedFile(session, fileId) {
-  const adminDb = getAdminDb();
   const fileSnap = await adminDb.collection("uploadedFiles").doc(fileId).get();
 
   if (!fileSnap.exists) {

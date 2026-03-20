@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { auth } from "../../../auth";
-import { getAdminDb } from "../../../firebaseAdmin";
+import { adminDb } from "../../../firebaseAdmin";
 import directShareValidation from "../../../utils/directShareValidation";
 import { FILE_ACTIONS, logFileAction } from "../../../utils/fileAccessLog";
 import shareLinkExpiry from "../../../utils/shareLinkExpiry";
@@ -12,7 +12,6 @@ export const runtime = "nodejs";
 
 export async function POST(request) {
   try {
-    const adminDb = getAdminDb();
     const session = await auth();
 
     if (!session?.user?.email || !session?.user?.id) {

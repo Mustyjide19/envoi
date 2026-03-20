@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "../../../../auth";
-import { getAdminDb } from "../../../../firebaseAdmin";
+import { adminDb } from "../../../../firebaseAdmin";
 import { FILE_ACTIONS, logFileAction } from "../../../../utils/fileAccessLog";
 import protectedFileAccess from "../../../../utils/protectedFileAccess";
 import shareLinkExpiry from "../../../../utils/shareLinkExpiry";
@@ -13,7 +13,6 @@ export const runtime = "nodejs";
 
 export async function GET(request, { params }) {
   try {
-    const adminDb = getAdminDb();
     const session = await auth();
 
     if (!session?.user?.id || !session?.user?.email) {
