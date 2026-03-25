@@ -2,10 +2,42 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getStorage, ref, deleteObject } from "firebase/storage";
 import { app } from "../../../../firebaseConfig";
 import UserAvatar from "../../../_components/UserAvatar";
+
+function normalizeText(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function getFileTypeLabel(file) {
+  const extension = String(file?.fileName || "")
+    .split(".")
+    .pop()
+    .toUpperCase();
+
+  if (
+    extension &&
+    extension !== String(file?.fileName || "").toUpperCase()
+  ) {
+    return extension;
+  }
+
+  if (file?.fileType?.includes("/")) {
+    return file.fileType.split("/").pop().toUpperCase();
+  }
+
+  return "FILE";
+}
+
+function getUploaderLabel(file, activeTab) {
+  if (activeTab === "shared") {
+    return file?.ownerName || file?.ownerEmail || "";
+  }
+
+  return file?.userName || file?.userEmail || "";
+}
 
 export default function FilesPage() {
   const { data: session, status } = useSession();
@@ -15,6 +47,10 @@ export default function FilesPage() {
   const [sharedFiles, setSharedFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTag, setSelectedTag] = useState("all");
+  const [selectedFileType, setSelectedFileType] = useState("all");
+  const [selectedUploader, setSelectedUploader] = useState("all");
   const storage = getStorage(app);
 
   useEffect(() => {
@@ -105,6 +141,11 @@ export default function FilesPage() {
   };
 
   const visibleFiles = activeTab === "owned" ? files : sharedFiles;
+  const hasActiveFilters =
+    searchQuery.trim() ||
+    selectedTag !== "all" ||
+    selectedFileType !== "all" ||
+    selectedUploader !== "all";
 
   const formatDate = (timestamp) => {
     if (!timestamp) return "Unknown";
@@ -127,22 +168,84 @@ export default function FilesPage() {
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   };
 
-  const getFileTypeBadge = (file) => {
-    const extension = String(file.fileName || "")
-      .split(".")
-      .pop()
-      .toUpperCase();
+  useEffect(() => {
+    setSearchQuery("");
+    setSelectedTag("all");
+    setSelectedFileType("all");
+    setSelectedUploader("all");
+  }, [activeTab]);
 
-    if (extension && extension !== String(file.fileName || "").toUpperCase()) {
-      return extension;
+  const tagOptions = useMemo(() => {
+    const tagSet = new Set();
+
+    visibleFiles.forEach((file) => {
+      (file.tags || []).forEach((tag) => {
+        const normalizedTag = String(tag || "").trim();
+        if (normalizedTag) {
+          tagSet.add(normalizedTag);
+        }
+      });
+    });
+
+    return Array.from(tagSet).sort((left, right) => left.localeCompare(right));
+  }, [visibleFiles]);
+
+  const fileTypeOptions = useMemo(() => {
+    return Array.from(
+      new Set(visibleFiles.map((file) => getFileTypeLabel(file)).filter(Boolean))
+    ).sort((left, right) => left.localeCompare(right));
+  }, [visibleFiles]);
+
+  const uploaderOptions = useMemo(() => {
+    if (activeTab !== "shared") {
+      return [];
     }
 
-    if (file.fileType?.includes("/")) {
-      return file.fileType.split("/").pop().toUpperCase();
-    }
+    return Array.from(
+      new Set(
+        visibleFiles
+          .map((file) => getUploaderLabel(file, activeTab))
+          .filter(Boolean)
+      )
+    ).sort((left, right) => left.localeCompare(right));
+  }, [activeTab, visibleFiles]);
 
-    return "FILE";
-  };
+  const filteredFiles = useMemo(() => {
+    const normalizedQuery = normalizeText(searchQuery);
+
+    return visibleFiles.filter((file) => {
+      const searchableText = [
+        file.fileName,
+        file.fileType,
+        ...(Array.isArray(file.tags) ? file.tags : []),
+        getUploaderLabel(file, activeTab),
+      ]
+        .map(normalizeText)
+        .join(" ");
+
+      const matchesSearch = !normalizedQuery || searchableText.includes(normalizedQuery);
+      const matchesTag =
+        selectedTag === "all" ||
+        (Array.isArray(file.tags) &&
+          file.tags.some((tag) => String(tag).trim() === selectedTag));
+      const matchesFileType =
+        selectedFileType === "all" ||
+        getFileTypeLabel(file) === selectedFileType;
+      const matchesUploader =
+        activeTab !== "shared" ||
+        selectedUploader === "all" ||
+        getUploaderLabel(file, activeTab) === selectedUploader;
+
+      return matchesSearch && matchesTag && matchesFileType && matchesUploader;
+    });
+  }, [
+    activeTab,
+    searchQuery,
+    selectedFileType,
+    selectedTag,
+    selectedUploader,
+    visibleFiles,
+  ]);
 
   if (status === "loading" || isLoading) {
     return (
@@ -189,7 +292,8 @@ export default function FilesPage() {
               {activeTab === "owned" ? "My Uploads" : "Shared With Me"}
             </h2>
             <p className="app-text-muted">
-              {visibleFiles.length} file{visibleFiles.length !== 1 ? "s" : ""} total
+              {filteredFiles.length} file{filteredFiles.length !== 1 ? "s" : ""}
+              {hasActiveFilters ? " shown" : " total"}
             </p>
           </div>
 
@@ -231,6 +335,85 @@ export default function FilesPage() {
           </div>
         </div>
 
+        {visibleFiles.length > 0 && (
+          <div className="app-surface mb-6 rounded-xl border p-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <div className="xl:col-span-2">
+                <label className="app-text-muted mb-2 block text-xs font-medium uppercase tracking-wide">
+                  Search
+                </label>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={
+                    activeTab === "owned"
+                      ? "Search by file name, tag, or type"
+                      : "Search by file name, tag, type, or uploader"
+                  }
+                  className="app-surface-muted app-text w-full rounded-lg border px-4 py-3 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="app-text-muted mb-2 block text-xs font-medium uppercase tracking-wide">
+                  File Type
+                </label>
+                <select
+                  value={selectedFileType}
+                  onChange={(e) => setSelectedFileType(e.target.value)}
+                  className="app-surface-muted app-text w-full rounded-lg border px-4 py-3 text-sm"
+                >
+                  <option value="all">All file types</option>
+                  {fileTypeOptions.map((fileType) => (
+                    <option key={fileType} value={fileType}>
+                      {fileType}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="app-text-muted mb-2 block text-xs font-medium uppercase tracking-wide">
+                  Tag
+                </label>
+                <select
+                  value={selectedTag}
+                  onChange={(e) => setSelectedTag(e.target.value)}
+                  className="app-surface-muted app-text w-full rounded-lg border px-4 py-3 text-sm"
+                >
+                  <option value="all">All tags</option>
+                  {tagOptions.map((tag) => (
+                    <option key={tag} value={tag}>
+                      {tag}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {activeTab === "shared" && (
+                <div className="xl:col-span-2">
+                  <label className="app-text-muted mb-2 block text-xs font-medium uppercase tracking-wide">
+                    Uploader
+                  </label>
+                  <select
+                    value={selectedUploader}
+                    onChange={(e) => setSelectedUploader(e.target.value)}
+                    className="app-surface-muted app-text w-full rounded-lg border px-4 py-3 text-sm"
+                  >
+                    <option value="all">All uploaders</option>
+                    {uploaderOptions.map((uploader) => (
+                      <option key={uploader} value={uploader}>
+                        {uploader}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {visibleFiles.length === 0 ? (
           activeTab === "owned" ? (
             <div className="app-surface rounded-xl border p-16 text-center">
@@ -255,9 +438,31 @@ export default function FilesPage() {
               <p className="app-text-muted">Files shared with you will appear here.</p>
             </div>
           )
+        ) : filteredFiles.length === 0 ? (
+          <div className="app-surface rounded-xl border p-16 text-center">
+            <svg className="app-text-muted mx-auto mb-6 h-20 w-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <h3 className="app-text mb-2 text-xl font-semibold">No matching files</h3>
+            <p className="app-text-muted mb-6">
+              Try adjusting your search or clearing one of the filters.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                setSelectedTag("all");
+                setSelectedFileType("all");
+                setSelectedUploader("all");
+              }}
+              className="app-accent-btn rounded-lg px-8 py-3 font-semibold transition"
+            >
+              Clear filters
+            </button>
+          </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {visibleFiles.map((file) => (
+            {filteredFiles.map((file) => (
               <article
                 key={activeTab === "owned" ? file.id : file.shareId}
                 className="app-surface rounded-xl border p-5 transition hover:-translate-y-0.5 hover:shadow-md"
@@ -280,7 +485,7 @@ export default function FilesPage() {
                   </div>
 
                   <span className="app-accent-badge rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide">
-                    {getFileTypeBadge(file)}
+                    {getFileTypeLabel(file)}
                   </span>
                 </div>
 
