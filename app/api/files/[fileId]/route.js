@@ -76,7 +76,6 @@ export async function PATCH(request, context) {
     const password = typeof body?.password === "string" ? body.password : "";
     const linkExpiryOption =
       typeof body?.linkExpiryOption === "string" ? body.linkExpiryOption : "";
-    const hadPassword = !!result.file.password;
     const resolvedExpiry = shareLinkExpiry.resolveShareLinkExpiry(linkExpiryOption);
 
     await result.fileSnap.ref.update({
@@ -84,15 +83,6 @@ export async function PATCH(request, context) {
       linkExpiryOption: resolvedExpiry.linkExpiryOption,
       linkExpiresAt: resolvedExpiry.linkExpiresAt,
     });
-
-    if (hadPassword && !password) {
-      await logFileAction({
-        fileId,
-        actorUserId: session.user.id,
-        actorEmail: session.user.email,
-        action: FILE_ACTIONS.REVOKE_ACCESS,
-      });
-    }
 
     return NextResponse.json({
       ok: true,
@@ -128,6 +118,13 @@ export async function DELETE(request, context) {
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }
+
+    await logFileAction({
+      fileId,
+      actorUserId: session.user.id,
+      actorEmail: session.user.email,
+      action: FILE_ACTIONS.REVOKE_ACCESS,
+    });
 
     await result.fileSnap.ref.delete();
 

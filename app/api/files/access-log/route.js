@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "../../../../auth";
+import { adminDb } from "../../../../firebaseAdmin";
 import { FILE_ACTIONS, logFileAction } from "../../../../utils/fileAccessLog";
 
 export const runtime = "nodejs";
@@ -22,6 +23,49 @@ export async function POST(request) {
       return NextResponse.json(
         { error: "File ID is required." },
         { status: 400 }
+      );
+    }
+
+    const fileSnapshot = await adminDb.collection("uploadedFiles").doc(fileId).get();
+
+    if (!fileSnapshot.exists) {
+      return NextResponse.json(
+        { error: "File not found." },
+        { status: 404 }
+      );
+    }
+
+    const file = fileSnapshot.data();
+    const isOwner = file.userEmail === session.user.email;
+
+    let hasSharedAccess = false;
+
+    if (!isOwner) {
+      const [sharedByUserSnapshot, sharedByEmailSnapshot] = await Promise.all([
+        session.user.id
+          ? adminDb
+              .collection("sharedFiles")
+              .where("fileId", "==", fileId)
+              .where("recipientUserId", "==", session.user.id)
+              .limit(1)
+              .get()
+          : Promise.resolve({ empty: true }),
+        adminDb
+          .collection("sharedFiles")
+          .where("fileId", "==", fileId)
+          .where("recipientEmail", "==", session.user.email)
+          .limit(1)
+          .get(),
+      ]);
+
+      hasSharedAccess =
+        !sharedByUserSnapshot.empty || !sharedByEmailSnapshot.empty;
+    }
+
+    if (!isOwner && !hasSharedAccess) {
+      return NextResponse.json(
+        { error: "Forbidden." },
+        { status: 403 }
       );
     }
 
