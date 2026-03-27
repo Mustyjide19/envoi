@@ -2,6 +2,7 @@
 
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
+import InstallPromptButton from "./InstallPromptButton";
 
 export default function Header() {
   const { data: session, status } = useSession();
@@ -34,7 +35,8 @@ export default function Header() {
             </a>
           </nav>
 
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-3">
+            <InstallPromptButton />
             {!isAuthenticated ? (
               <>
                 <Link
