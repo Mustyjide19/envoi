@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "../../../../auth";
 import { adminDb } from "../../../../firebaseAdmin";
 import { FILE_ACTIONS, logFileAction } from "../../../../utils/fileAccessLog";
+import protectedFileAccess from "../../../../utils/protectedFileAccess";
+import shareLinkExpiry from "../../../../utils/shareLinkExpiry";
 
 export const runtime = "nodejs";
 
@@ -58,8 +60,26 @@ export async function POST(request) {
           .get(),
       ]);
 
-      hasSharedAccess =
-        !sharedByUserSnapshot.empty || !sharedByEmailSnapshot.empty;
+      const matchingShares = [
+        ...sharedByUserSnapshot.docs.map((doc) => doc.data()),
+        ...sharedByEmailSnapshot.docs.map((doc) => doc.data()),
+      ];
+
+      hasSharedAccess = matchingShares.some((share) => {
+        if (shareLinkExpiry.isShareLinkExpired(share.shareExpiresAt)) {
+          return false;
+        }
+
+        if (!share.sharePasswordHash && !share.sharePassword) {
+          return true;
+        }
+
+        return (
+          request.cookies.get(
+            protectedFileAccess.getSharedUnlockCookieName(share.id)
+          )?.value === "1"
+        );
+      });
     }
 
     if (!isOwner && !hasSharedAccess) {

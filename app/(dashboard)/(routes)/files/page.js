@@ -123,6 +123,13 @@ export default function FilesPage() {
       return;
     }
 
+    if (!file.fileURL) {
+      if (activeTab === "shared" && file.shareId) {
+        router.push(`/shared-files/${file.shareId}`);
+      }
+      return;
+    }
+
     try {
       await fetch("/api/files/access-log", {
         method: "POST",
@@ -597,9 +604,15 @@ export default function FilesPage() {
                   <button
                     onClick={() => handleDownload(file)}
                     className="rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-100"
-                    title="Download"
+                    title={
+                      activeTab === "shared" && !file.fileURL
+                        ? "Open the shared file page to complete access requirements"
+                        : "Download"
+                    }
                   >
-                    Download
+                    {activeTab === "shared" && !file.fileURL
+                      ? "Open to Download"
+                      : "Download"}
                   </button>
                   {activeTab === "owned" && (
                     <button

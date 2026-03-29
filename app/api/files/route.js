@@ -3,6 +3,8 @@ import { FieldPath } from "firebase-admin/firestore";
 import { auth } from "../../../auth";
 import { adminDb } from "../../../firebaseAdmin";
 import { FILE_ACTIONS, logFileAction } from "../../../utils/fileAccessLog";
+import protectedFileAccess from "../../../utils/protectedFileAccess";
+import shareLinkExpiry from "../../../utils/shareLinkExpiry";
 import sensitivityLabels from "../../../utils/sensitivityLabels";
 
 export const runtime = "nodejs";
@@ -20,7 +22,7 @@ function sortNewestFirst(items, fieldName) {
   });
 }
 
-export async function GET() {
+export async function GET(request) {
   try {
     const session = await auth();
 
@@ -84,12 +86,31 @@ export async function GET() {
             return null;
           }
 
+          const shareExpired = shareLinkExpiry.isShareLinkExpired(
+            share.shareExpiresAt
+          );
+          const isUnlocked =
+            !shareExpired &&
+            ((!share.sharePasswordHash && !share.sharePassword) ||
+              request.cookies.get(
+                protectedFileAccess.getSharedUnlockCookieName(share.id)
+              )?.value === "1");
+          const shapedResponse = protectedFileAccess.buildSharedFileResponse({
+            share,
+            file,
+            unlocked: isUnlocked,
+          });
+
           return {
             shareId: share.id,
             ownerEmail: share.ownerEmail,
             ownerName: share.ownerName,
             sharedAt: share.sharedAt,
-            ...file,
+            shareExpiresAt: share.shareExpiresAt || null,
+            shareExpired,
+            passwordProtected: shapedResponse.passwordProtected,
+            unlocked: shapedResponse.unlocked,
+            ...shapedResponse.file,
           };
         })
         .filter(Boolean),
