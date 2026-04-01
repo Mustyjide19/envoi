@@ -16,6 +16,17 @@ const cspDirectives = [
     "https://*.firebasestorage.app",
   ].join(" "),
   [
+    "frame-src 'self'",
+    "https://firebasestorage.googleapis.com",
+    "https://*.firebasestorage.app",
+  ].join(" "),
+  [
+    "media-src 'self'",
+    "https://firebasestorage.googleapis.com",
+    "https://*.firebasestorage.app",
+    "blob:",
+  ].join(" "),
+  [
     "font-src 'self' data:",
     "https://fonts.gstatic.com",
   ].join(" "),

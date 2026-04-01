@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import UserAvatar from "../../_components/UserAvatar";
+import FileContentPreview from "../../_components/FileContentPreview";
 
 export default function FileViewPage({ params }) {
   const router = useRouter();
@@ -194,8 +195,6 @@ export default function FileViewPage({ params }) {
     );
   }
 
-  const isImage = file.fileType?.startsWith("image/");
-
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-4xl mx-auto">
@@ -230,15 +229,9 @@ export default function FileViewPage({ params }) {
               </div>
             </div>
 
-            {isImage && (
-              <div className="mb-6">
-                <img
-                  src={file.fileURL}
-                  alt={file.fileName}
-                  className="max-w-full h-auto rounded-lg border border-gray-200"
-                />
-              </div>
-            )}
+            <div className="mb-6">
+              <FileContentPreview file={file} />
+            </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
               <div className="flex items-start gap-3">

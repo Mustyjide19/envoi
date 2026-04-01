@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import UserAvatar from "../../_components/UserAvatar";
+import FileContentPreview from "../../_components/FileContentPreview";
 import shareLinkExpiry from "../../../utils/shareLinkExpiry";
 
 export default function SharedFilePage({ params }) {
@@ -116,7 +117,6 @@ export default function SharedFilePage({ params }) {
 
   const file = sharedFile?.file;
   const share = sharedFile?.share;
-  const isImage = file?.fileType?.startsWith("image/");
   const expiryNotice = useMemo(() => {
     if (!share?.shareExpiresAt) {
       return null;
@@ -261,15 +261,9 @@ export default function SharedFilePage({ params }) {
               </>
             ) : (
               <>
-                {isImage && (
-                  <div className="mb-6">
-                    <img
-                      src={file.fileURL}
-                      alt={file.fileName}
-                      className="max-w-full h-auto rounded-lg border border-gray-200"
-                    />
-                  </div>
-                )}
+                <div className="mb-6">
+                  <FileContentPreview file={file} />
+                </div>
 
                 <button
                   onClick={handleDownload}
