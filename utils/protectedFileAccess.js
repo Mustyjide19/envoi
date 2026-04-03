@@ -13,6 +13,7 @@ function buildPublicFileResponse(file, unlocked) {
     unlocked,
     password: undefined,
     shortUrl: undefined,
+    storagePath: undefined,
     fileURL: unlocked ? file.fileURL : undefined,
   };
 }
@@ -30,6 +31,7 @@ function buildSharedFileResponse({ share, file, unlocked }) {
       ...file,
       password: undefined,
       shortUrl: undefined,
+      storagePath: undefined,
       fileURL: unlocked ? file.fileURL : undefined,
     },
     passwordProtected: !!share.sharePasswordHash || !!share.sharePassword,

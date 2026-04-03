@@ -6,6 +6,7 @@ import FileShareForm from "./_components/FileShareForm";
 function FilePreview({ params }) {
   const [fileId, setFileId] = useState(null);
   const [file, setFile] = useState(null);
+  const [fileError, setFileError] = useState("");
   const [logs, setLogs] = useState([]);
 
   useEffect(() => {
@@ -22,14 +23,24 @@ function FilePreview({ params }) {
   }, [fileId]);
 
   const getFileInfo = async () => {
-    const response = await fetch(`/api/files/${fileId}`, { cache: "no-store" });
-    if (!response.ok) {
-      setFile(null);
-      return;
-    }
+    try {
+      const response = await fetch(`/api/files/${fileId}`, { cache: "no-store" });
+      const data = await response.json().catch(() => ({}));
 
-    const data = await response.json();
-    setFile(data);
+      if (!response.ok) {
+        setFile(null);
+        setFileError(data?.error || "Unable to load file preview.");
+        return null;
+      }
+
+      setFile(data);
+      setFileError("");
+      return data;
+    } catch {
+      setFile(null);
+      setFileError("Unable to load file preview.");
+      return null;
+    }
   };
 
   const getFileActivity = async () => {
@@ -77,7 +88,7 @@ function FilePreview({ params }) {
 
         <div className="flex items-center justify-center">
           <div className="grid w-full max-w-5xl grid-cols-1 gap-8 px-2 lg:grid-cols-2 lg:px-4">
-            <FileInfo file={file} />
+            <FileInfo file={file} error={fileError} />
             <div className="flex flex-col gap-6">
               <FileShareForm file={file} onPasswordSave={getFileInfo} />
 

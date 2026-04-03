@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import UserMenu from "../_components/UserMenu";
+import NotificationsBell from "../(dashboard)/_components/NotificationsBell";
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -111,7 +112,10 @@ export default function Dashboard() {
             <h1 className="app-text text-2xl font-bold">ENVOI</h1>
           </button>
           
-          <UserMenu user={session.user} />
+          <div className="flex items-center gap-3">
+            <NotificationsBell />
+            <UserMenu user={session.user} />
+          </div>
         </div>
       </header>
 

@@ -40,7 +40,10 @@ export async function GET(request, context) {
       )?.value === "1";
 
     return NextResponse.json(
-      protectedFileAccess.buildPublicFileResponse(file, isUnlocked)
+      protectedFileAccess.buildPublicFileResponse(
+        file,
+        isUnlocked
+      )
     );
   } catch (error) {
     console.error("GET /api/public-files/[fileId] failed:", error);

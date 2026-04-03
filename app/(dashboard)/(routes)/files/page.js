@@ -126,6 +126,8 @@ export default function FilesPage() {
     if (!file.fileURL) {
       if (activeTab === "shared" && file.shareId) {
         router.push(`/shared-files/${file.shareId}`);
+      } else {
+        router.push(`/file-preview/${file.id}`);
       }
       return;
     }
@@ -605,14 +607,14 @@ export default function FilesPage() {
                     onClick={() => handleDownload(file)}
                     className="rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-100"
                     title={
-                      activeTab === "shared" && !file.fileURL
-                        ? "Open the shared file page to complete access requirements"
+                      !file.fileURL
+                        ? activeTab === "shared"
+                          ? "Open the shared file page to complete access requirements"
+                          : "Open the file preview page to access this file"
                         : "Download"
                     }
                   >
-                    {activeTab === "shared" && !file.fileURL
-                      ? "Open to Download"
-                      : "Download"}
+                    {!file.fileURL ? "Open to Download" : "Download"}
                   </button>
                   {activeTab === "owned" && (
                     <button

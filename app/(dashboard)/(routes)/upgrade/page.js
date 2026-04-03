@@ -1,11 +1,5 @@
-import React from 'react'
+import { redirect } from "next/navigation";
 
-function Upgrade() {
-  return (
-    <div>
-      Upgrade
-    </div>
-  )
+export default function UpgradePage() {
+  redirect("/notifications");
 }
-
-export default Upgrade

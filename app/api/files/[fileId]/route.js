@@ -45,7 +45,10 @@ export async function GET(request, context) {
       action: FILE_ACTIONS.VIEW,
     });
 
-    return NextResponse.json(result.file);
+    return NextResponse.json({
+      ...result.file,
+      storagePath: undefined,
+    });
   } catch (error) {
     console.error("GET /api/files/[fileId] failed:", error);
     return NextResponse.json(
@@ -88,6 +91,7 @@ export async function PATCH(request, context) {
       ok: true,
       file: {
         ...result.file,
+        storagePath: undefined,
         password,
         linkExpiryOption: resolvedExpiry.linkExpiryOption,
         linkExpiresAt: resolvedExpiry.linkExpiresAt,

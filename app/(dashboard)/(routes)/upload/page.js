@@ -80,6 +80,7 @@ function Upload() {
           fileName,
           file,
           downloadURL,
+          uploadTask.snapshot.ref.fullPath,
           description,
           normalizeTags(rawTags),
           sensitivityLabels.normalizeSensitivityLabel(sensitivityLabel)
@@ -92,6 +93,7 @@ function Upload() {
     fileName,
     file,
     downloadURL,
+    storagePath,
     description = "",
     tags = [],
     sensitivityLabel = ""
@@ -110,6 +112,7 @@ function Upload() {
           fileType: file.type,
           fileSize: file.size,
           fileURL: downloadURL,
+          storagePath,
           description,
           tags,
           sensitivityLabel,

@@ -39,7 +39,10 @@ export async function GET(request) {
       .get();
 
     const ownedFiles = ownedSnapshot.docs
-      .map((doc) => doc.data())
+      .map((doc) => ({
+        ...doc.data(),
+        storagePath: undefined,
+      }))
       .sort((a, b) => String(b.id || "").localeCompare(String(a.id || "")));
 
     const sharedSnapshots = await Promise.all([
@@ -79,8 +82,9 @@ export async function GET(request) {
     }
 
     const sharedFiles = sortNewestFirst(
-      shareRecords
-        .map((share) => {
+      (
+        await Promise.all(
+          shareRecords.map(async (share) => {
           const file = fileMap.get(share.fileId);
           if (!file) {
             return null;
@@ -112,8 +116,9 @@ export async function GET(request) {
             unlocked: shapedResponse.unlocked,
             ...shapedResponse.file,
           };
-        })
-        .filter(Boolean),
+          })
+        )
+      ).filter(Boolean),
       "sharedAt"
     );
 
@@ -148,6 +153,7 @@ export async function POST(request) {
       fileType,
       fileSize,
       fileURL,
+      storagePath,
       shortUrl,
       description,
       tags,
@@ -177,6 +183,10 @@ export async function POST(request) {
       fileType: fileType || "",
       fileSize: Number(fileSize) || 0,
       fileURL,
+      storagePath:
+        typeof storagePath === "string" && storagePath.trim()
+          ? storagePath.trim()
+          : `file-upload/${fileName}`,
       description: typeof description === "string" ? description.trim() : "",
       tags: Array.isArray(tags)
         ? [...new Set(tags.map((tag) => String(tag).trim()).filter(Boolean))].slice(0, 5)

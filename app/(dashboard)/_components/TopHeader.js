@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { AlignJustify } from "lucide-react";
 import Image from "next/image";
 import UserMenu from "../../_components/UserMenu";
+import NotificationsBell from "./NotificationsBell";
 
 function TopHeader({ onMenuClick }) {
   const { data: session } = useSession();
@@ -31,7 +32,12 @@ function TopHeader({ onMenuClick }) {
         <span className="app-text text-lg font-bold">ENVOI</span>
       </div>
 
-      {session && <UserMenu user={session.user} />}
+      {session && (
+        <div className="flex items-center gap-3">
+          <NotificationsBell />
+          <UserMenu user={session.user} />
+        </div>
+      )}
     </div>
   );
 }

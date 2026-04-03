@@ -1,6 +1,5 @@
-const CACHE_NAME = "envoi-static-v1";
+const CACHE_NAME = "envoi-static-v2";
 const STATIC_ASSETS = [
-  "/",
   "/favicon.ico",
   "/favicon.svg",
   "/logoicon.jpg",
@@ -52,9 +51,8 @@ function isSafeStaticRequest(requestUrl, request) {
   }
 
   return (
-    requestUrl.pathname.startsWith("/_next/static/") ||
     STATIC_ASSETS.includes(requestUrl.pathname) ||
-    ["image", "style", "script", "font"].includes(request.destination)
+    ["image", "style", "font"].includes(request.destination)
   );
 }
 

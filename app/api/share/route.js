@@ -6,6 +6,7 @@ import { adminDb } from "../../../firebaseAdmin";
 import directShareValidation from "../../../utils/directShareValidation";
 import { FILE_ACTIONS, logFileAction } from "../../../utils/fileAccessLog";
 import shareLinkExpiry from "../../../utils/shareLinkExpiry";
+import { createShareNotification } from "../../../utils/shareNotifications";
 
 const prisma = new PrismaClient();
 export const runtime = "nodejs";
@@ -118,6 +119,18 @@ export async function POST(request) {
       actorUserId: session.user.id,
       actorEmail: session.user.email,
       action: FILE_ACTIONS.SHARE,
+    });
+
+    await createShareNotification({
+      recipientUserId: recipient.id,
+      recipientEmail: recipient.email,
+      senderUserId: sender.id,
+      senderName: sender.name || fileData.userName || "",
+      senderEmail: sender.email,
+      fileId,
+      fileName: fileData.fileName || "",
+      fileType: fileData.fileType || "",
+      shareId,
     });
 
     return NextResponse.json({
