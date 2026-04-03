@@ -20,8 +20,9 @@ async function mockAuthenticatedSession(page: Page) {
 async function openUpload(page: Page) {
   await mockAuthenticatedSession(page);
   await page.goto("/upload");
-  await expect(page.locator('input[type="file"]')).toBeAttached();
-  await expect(page.getByText("Browse and select a file")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Browse file" })
+  ).toBeVisible();
 }
 
 test("blocks wrong extension in upload UI", async ({ page }) => {
