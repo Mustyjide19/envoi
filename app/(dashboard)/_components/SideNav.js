@@ -1,12 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Upload, Folder, Bell } from "lucide-react";
+import { Upload, Folder, Bell, Layers3 } from "lucide-react";
 
 export default function SideNav() {
   const menuList = [
     { id: 1, name: "Upload", icon: Upload, path: "/upload" },
     { id: 2, name: "Files", icon: Folder, path: "/files" },
-    { id: 3, name: "Notifications", icon: Bell, path: "/notifications" },
+    { id: 3, name: "Collections", icon: Layers3, path: "/collections" },
+    { id: 4, name: "Notifications", icon: Bell, path: "/notifications" },
   ];
 
   return (

@@ -17,6 +17,23 @@ function formatTimestamp(timestamp) {
   });
 }
 
+function getNotificationTitle(notification) {
+  if (notification.type === "COLLECTION_SHARE_RECEIVED") {
+    return `${notification.senderName || notification.senderEmail} shared collection ${notification.collectionTitle || "a collection"} with you in Envoi`;
+  }
+
+  return `${notification.senderName || notification.senderEmail} shared ${notification.fileName || "a file"}`;
+}
+
+function getNotificationMeta(notification) {
+  if (notification.type === "COLLECTION_SHARE_RECEIVED") {
+    const count = Number(notification.fileCount) || 0;
+    return `${count} file${count === 1 ? "" : "s"} included • Open inside Envoi`;
+  }
+
+  return notification.fileType || "Unknown file type";
+}
+
 export default function NotificationsPage() {
   const router = useRouter();
   const [notifications, setNotifications] = useState([]);
@@ -73,7 +90,9 @@ export default function NotificationsPage() {
         )
       );
 
-      if (notification.shareId) {
+      if (notification.targetPath) {
+        router.push(notification.targetPath);
+      } else if (notification.shareId) {
         router.push(`/shared-files/${notification.shareId}`);
       }
     } catch (error) {
@@ -106,7 +125,7 @@ export default function NotificationsPage() {
         <div className="app-surface rounded-xl border p-12 text-center">
           <h2 className="app-text text-xl font-semibold">No notifications yet</h2>
           <p className="app-text-muted mt-2">
-            When someone shares a file with you, it will appear here.
+            When someone shares a file or collection with you inside Envoi, it will appear here.
           </p>
         </div>
       ) : (
@@ -133,11 +152,10 @@ export default function NotificationsPage() {
                   </div>
 
                   <p className="app-text text-sm font-semibold">
-                    {notification.senderName || notification.senderEmail} shared{" "}
-                    <span className="font-bold">{notification.fileName || "a file"}</span>
+                    {getNotificationTitle(notification)}
                   </p>
                   <p className="app-text-muted mt-1 text-sm">
-                    {notification.fileType || "Unknown file type"}
+                    {getNotificationMeta(notification)}
                   </p>
                 </div>
 

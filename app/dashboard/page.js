@@ -192,7 +192,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 gap-6 mb-8 md:grid-cols-2 xl:grid-cols-3">
           <button
             onClick={() => router.push("/upload")}
             className="app-accent-btn rounded-xl p-6 shadow-sm transition flex items-center gap-4"
@@ -220,6 +220,21 @@ export default function Dashboard() {
             <div className="text-left">
               <h3 className="text-lg font-semibold">My Files</h3>
               <p className="app-text-muted text-sm">View and manage uploads</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => router.push("/collections")}
+            className="app-surface app-text rounded-xl border p-6 transition flex items-center gap-4 hover:bg-[var(--app-surface-muted)]"
+          >
+            <div className="app-surface-muted flex h-12 w-12 items-center justify-center rounded-lg border">
+              <svg className="app-text w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h7v12H4zM13 6h7v5h-7zM13 13h7v5h-7z" />
+              </svg>
+            </div>
+            <div className="text-left">
+              <h3 className="text-lg font-semibold">Collections</h3>
+              <p className="app-text-muted text-sm">Bundle related files together</p>
             </div>
           </button>
         </div>

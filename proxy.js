@@ -33,6 +33,8 @@ export const config = {
     "/dashboard/:path*",
     "/upload/:path*",
     "/files/:path*",
+    "/collections/:path*",
+    "/notifications/:path*",
     "/file-preview/:path*",
     "/sign-in",
     "/sign-up",

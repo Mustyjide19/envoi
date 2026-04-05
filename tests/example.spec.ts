@@ -1,15 +1,17 @@
 import { test, expect, Page } from "@playwright/test";
 
 async function mockAuthenticatedSession(page: Page) {
-  await page.route("**/api/auth/session", async (route) => {
+  await page.route("**/api/auth/session**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         user: {
+          id: "e2e-user-id",
           name: "E2E User",
           email: "e2e@example.com",
           image: null,
+          isVerified: true,
         },
         expires: "2099-12-31T23:59:59.999Z",
       }),
@@ -19,10 +21,13 @@ async function mockAuthenticatedSession(page: Page) {
 
 async function openUpload(page: Page) {
   await mockAuthenticatedSession(page);
-  await page.goto("/upload");
+  await page.goto("/upload", { waitUntil: "domcontentloaded" });
+  await expect(
+    page.getByRole("heading", { name: /Start Uploading Files and Share it/i })
+  ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Browse file" })
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 15000 });
 }
 
 test("blocks wrong extension in upload UI", async ({ page }) => {
