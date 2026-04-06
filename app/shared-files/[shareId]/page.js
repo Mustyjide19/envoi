@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import UserAvatar from "../../_components/UserAvatar";
 import FileContentPreview from "../../_components/FileContentPreview";
 import shareLinkExpiry from "../../../utils/shareLinkExpiry";
+import smartShareContract from "../../../utils/smartShareContract";
 
 export default function SharedFilePage({ params }) {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function SharedFilePage({ params }) {
   const [error, setError] = useState("");
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [downloadError, setDownloadError] = useState("");
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [isExpired, setIsExpired] = useState(false);
   const [currentTime, setCurrentTime] = useState(Date.now());
@@ -53,6 +55,7 @@ export default function SharedFilePage({ params }) {
   const loadSharedFile = async () => {
     setIsLoading(true);
     setError("");
+    setDownloadError("");
     try {
       const response = await fetch(`/api/shared-files/${shareId}`, {
         cache: "no-store",
@@ -117,6 +120,9 @@ export default function SharedFilePage({ params }) {
 
   const file = sharedFile?.file;
   const share = sharedFile?.share;
+  const contractState = useMemo(() => {
+    return share ? smartShareContract.getContractState(share, currentTime) : null;
+  }, [currentTime, share]);
   const expiryNotice = useMemo(() => {
     if (!share?.shareExpiresAt) {
       return null;
@@ -130,6 +136,13 @@ export default function SharedFilePage({ params }) {
       ),
     };
   }, [currentTime, share?.shareExpiresAt]);
+  const hasContractRules = useMemo(() => {
+    return share ? smartShareContract.hasContractRestrictions(share) : false;
+  }, [share]);
+  const downloadBlocked =
+    !contractState ||
+    contractState.allowDownload === false ||
+    contractState.remainingDownloads === 0;
 
   if (status === "loading" || isLoading) {
     return (
@@ -162,21 +175,38 @@ export default function SharedFilePage({ params }) {
   }
 
   const handleDownload = async () => {
+    setDownloadError("");
+
     try {
-      await fetch("/api/files/access-log", {
+      const response = await fetch("/api/files/access-log", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           fileId: file.id,
+          shareId,
         }),
       });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        if (response.status === 410 || data?.code === "SHARE_EXPIRED") {
+          setIsExpired(true);
+          setSharedFile(null);
+          return;
+        }
+
+        setDownloadError(data?.error || "Download unavailable for this share.");
+        return;
+      }
+
+      window.open(file.fileURL, "_blank");
     } catch (error) {
       console.error("Failed to log download:", error);
+      setDownloadError("Download unavailable for this share.");
     }
-
-    window.open(file.fileURL, "_blank");
   };
 
   return (
@@ -214,6 +244,31 @@ export default function SharedFilePage({ params }) {
                 <p className="mt-1 text-sm text-blue-800">
                   Expires at {expiryNotice.exactTime}
                 </p>
+              </div>
+            )}
+
+            {hasContractRules && (
+              <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-semibold text-slate-900">
+                  Smart Share Rules
+                </p>
+                <div className="mt-2 space-y-1 text-sm text-slate-700">
+                  {share?.verifiedUsersOnly && (
+                    <p>Verified Envoi accounts only.</p>
+                  )}
+                  {contractState?.maxViews !== null && (
+                    <p>
+                      Opens remaining: {contractState.remainingViews} of {contractState.maxViews}
+                    </p>
+                  )}
+                  {contractState?.allowDownload === false ? (
+                    <p>This share is view only. Downloads are disabled.</p>
+                  ) : contractState?.maxDownloads !== null ? (
+                    <p>
+                      Downloads remaining: {contractState.remainingDownloads} of {contractState.maxDownloads}
+                    </p>
+                  ) : null}
+                </div>
               </div>
             )}
 
@@ -265,11 +320,18 @@ export default function SharedFilePage({ params }) {
                   <FileContentPreview file={file} />
                 </div>
 
+                {downloadError && (
+                  <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
+                    <p className="text-sm text-red-600">{downloadError}</p>
+                  </div>
+                )}
+
                 <button
                   onClick={handleDownload}
-                  className="w-full rounded-lg bg-blue-600 px-6 py-4 font-semibold text-white hover:bg-blue-700 transition"
+                  disabled={downloadBlocked || !file?.fileURL}
+                  className="w-full rounded-lg bg-blue-600 px-6 py-4 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Download File
+                  {share?.allowDownload === false ? "View Only" : "Download File"}
                 </button>
               </>
             )}

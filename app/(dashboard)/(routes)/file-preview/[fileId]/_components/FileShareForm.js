@@ -4,6 +4,12 @@ import { useSession } from "next-auth/react";
 import { checkPasswordStrength } from "../../../../../../utils/passwordStrength";
 import shareLinkExpiry from "../../../../../../utils/shareLinkExpiry";
 
+function getCurrentLocalDateTimeValue() {
+  const now = new Date();
+  const offsetMs = now.getTimezoneOffset() * 60 * 1000;
+  return new Date(now.getTime() - offsetMs).toISOString().slice(0, 16);
+}
+
 function FileShareForm({ file, onPasswordSave }) {
   const { data: session } = useSession();
   const isVerified = !!session?.user?.isVerified;
@@ -14,9 +20,11 @@ function FileShareForm({ file, onPasswordSave }) {
   const [directShareEmail, setDirectShareEmail] = useState("");
   const [directSharePassword, setDirectSharePassword] = useState("");
   const [showDirectSharePassword, setShowDirectSharePassword] = useState(false);
-  const [directShareExpiryOption, setDirectShareExpiryOption] = useState(
-    shareLinkExpiry.SHARE_LINK_EXPIRY_OPTIONS.NEVER
-  );
+  const [directShareVerifiedOnly, setDirectShareVerifiedOnly] = useState(false);
+  const [directShareExpiresAt, setDirectShareExpiresAt] = useState("");
+  const [directShareMaxViews, setDirectShareMaxViews] = useState("");
+  const [directShareMaxDownloads, setDirectShareMaxDownloads] = useState("");
+  const [directShareAllowDownload, setDirectShareAllowDownload] = useState(true);
   const [linkExpiryOption, setLinkExpiryOption] = useState(
     shareLinkExpiry.SHARE_LINK_EXPIRY_OPTIONS.NEVER
   );
@@ -159,7 +167,11 @@ function FileShareForm({ file, onPasswordSave }) {
           fileId: file?.id,
           recipientEmail: directShareEmail,
           sharePassword: directSharePassword,
-          shareExpiryOption: directShareExpiryOption,
+          verifiedUsersOnly: directShareVerifiedOnly,
+          expiresAt: directShareExpiresAt,
+          maxViews: directShareMaxViews,
+          maxDownloads: directShareMaxDownloads,
+          allowDownload: directShareAllowDownload,
         }),
       });
 
@@ -173,7 +185,11 @@ function FileShareForm({ file, onPasswordSave }) {
       setDirectShareMessage(data.message || "File shared successfully.");
       setDirectShareEmail("");
       setDirectSharePassword("");
-      setDirectShareExpiryOption(shareLinkExpiry.SHARE_LINK_EXPIRY_OPTIONS.NEVER);
+      setDirectShareVerifiedOnly(false);
+      setDirectShareExpiresAt("");
+      setDirectShareMaxViews("");
+      setDirectShareMaxDownloads("");
+      setDirectShareAllowDownload(true);
     } catch {
       setDirectShareError("Failed to share file.");
     } finally {
@@ -193,6 +209,10 @@ function FileShareForm({ file, onPasswordSave }) {
         <label className="app-text mb-2 block text-sm font-semibold">
           Share with Registered User
         </label>
+        <p className="app-text-muted mb-3 text-sm">
+          Share this file directly with an existing Envoi user and optionally
+          add smart access rules.
+        </p>
         <input
           type="email"
           value={directShareEmail}
@@ -227,25 +247,101 @@ function FileShareForm({ file, onPasswordSave }) {
             )}
           </button>
         </div>
-        <select
-          value={directShareExpiryOption}
-          onChange={(e) => setDirectShareExpiryOption(e.target.value)}
-          disabled={!isVerified || isDirectSharing}
-          className="app-surface-muted app-text mb-3 w-full rounded-lg border px-4 py-3"
-        >
-          <option value={shareLinkExpiry.SHARE_LINK_EXPIRY_OPTIONS.NEVER}>
-            No share expiry
-          </option>
-          <option value={shareLinkExpiry.SHARE_LINK_EXPIRY_OPTIONS.ONE_HOUR}>
-            1 hour
-          </option>
-          <option value={shareLinkExpiry.SHARE_LINK_EXPIRY_OPTIONS.TWENTY_FOUR_HOURS}>
-            24 hours
-          </option>
-          <option value={shareLinkExpiry.SHARE_LINK_EXPIRY_OPTIONS.SEVEN_DAYS}>
-            7 days
-          </option>
-        </select>
+
+        <div className="app-surface-muted mb-3 rounded-lg border p-4">
+          <div className="mb-3">
+            <h3 className="app-text text-sm font-semibold">Smart Share Rules</h3>
+            <p className="app-text-muted mt-1 text-xs">
+              Leave fields blank for a normal Envoi share.
+            </p>
+          </div>
+
+          <div className="mb-3 flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="directShareVerifiedOnly"
+              checked={directShareVerifiedOnly}
+              onChange={(e) => setDirectShareVerifiedOnly(e.target.checked)}
+              disabled={!isVerified || isDirectSharing}
+              className="h-4 w-4 rounded border-gray-300"
+              style={{ accentColor: "var(--accent-solid)" }}
+            />
+            <label htmlFor="directShareVerifiedOnly" className="app-text text-sm font-medium">
+              Verified users only
+            </label>
+          </div>
+
+          <div className="mb-3">
+            <label className="app-text mb-2 block text-sm font-medium">
+              Access expires at
+            </label>
+            <input
+              type="datetime-local"
+              value={directShareExpiresAt}
+              min={getCurrentLocalDateTimeValue()}
+              onChange={(e) => setDirectShareExpiresAt(e.target.value)}
+              disabled={!isVerified || isDirectSharing}
+              className="app-text w-full rounded-lg border px-4 py-3"
+            />
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <div>
+              <label className="app-text mb-2 block text-sm font-medium">
+                Max opens/views
+              </label>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                inputMode="numeric"
+                value={directShareMaxViews}
+                onChange={(e) => setDirectShareMaxViews(e.target.value)}
+                disabled={!isVerified || isDirectSharing}
+                placeholder="Unlimited"
+                className="app-text w-full rounded-lg border px-4 py-3"
+              />
+            </div>
+
+            <div>
+              <label className="app-text mb-2 block text-sm font-medium">
+                Max downloads
+              </label>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                inputMode="numeric"
+                value={directShareMaxDownloads}
+                onChange={(e) => setDirectShareMaxDownloads(e.target.value)}
+                disabled={!isVerified || isDirectSharing || !directShareAllowDownload}
+                placeholder={directShareAllowDownload ? "Unlimited" : "Disabled"}
+                className="app-text w-full rounded-lg border px-4 py-3 disabled:cursor-not-allowed disabled:opacity-60"
+              />
+            </div>
+          </div>
+
+          <div className="mt-3 flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="directShareAllowDownload"
+              checked={directShareAllowDownload}
+              onChange={(e) => {
+                setDirectShareAllowDownload(e.target.checked);
+                if (!e.target.checked) {
+                  setDirectShareMaxDownloads("");
+                }
+              }}
+              disabled={!isVerified || isDirectSharing}
+              className="h-4 w-4 rounded border-gray-300"
+              style={{ accentColor: "var(--accent-solid)" }}
+            />
+            <label htmlFor="directShareAllowDownload" className="app-text text-sm font-medium">
+              Allow download
+            </label>
+          </div>
+        </div>
+
         <button
           onClick={handleDirectShare}
           disabled={!isVerified || isDirectSharing || !directShareEmail}

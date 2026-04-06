@@ -5,6 +5,7 @@ import { adminDb } from "../../../../../firebaseAdmin";
 import passwordAttemptLimiter from "../../../../../utils/passwordAttemptLimiter";
 import protectedFileAccess from "../../../../../utils/protectedFileAccess";
 import shareLinkExpiry from "../../../../../utils/shareLinkExpiry";
+import smartShareContract from "../../../../../utils/smartShareContract";
 import {
   logSecurityEvent,
   SECURITY_EVENT_TYPES,
@@ -59,6 +60,20 @@ export async function POST(request, { params }) {
       return NextResponse.json(
         { error: "Forbidden." },
         { status: 403 }
+      );
+    }
+
+    const contractAccess = smartShareContract.evaluateContractAccess({
+      share,
+      actorIsVerified: !!session.user.isVerified,
+      action: smartShareContract.ACTIONS.UNLOCK,
+      now,
+    });
+
+    if (!contractAccess.ok) {
+      return NextResponse.json(
+        { error: contractAccess.message, code: contractAccess.code },
+        { status: contractAccess.status }
       );
     }
 

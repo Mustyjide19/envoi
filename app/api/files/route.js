@@ -4,7 +4,7 @@ import { auth } from "../../../auth";
 import { adminDb } from "../../../firebaseAdmin";
 import { FILE_ACTIONS, logFileAction } from "../../../utils/fileAccessLog";
 import protectedFileAccess from "../../../utils/protectedFileAccess";
-import shareLinkExpiry from "../../../utils/shareLinkExpiry";
+import smartShareContract from "../../../utils/smartShareContract";
 import sensitivityLabels from "../../../utils/sensitivityLabels";
 
 export const runtime = "nodejs";
@@ -92,19 +92,31 @@ export async function GET(request) {
             return null;
           }
 
-          const shareExpired = shareLinkExpiry.isShareLinkExpired(
-            share.shareExpiresAt
-          );
+          const contractState = smartShareContract.getContractState(share);
+          const shareExpired = contractState.expired;
           const isUnlocked =
             !shareExpired &&
             ((!share.sharePasswordHash && !share.sharePassword) ||
               request.cookies.get(
                 protectedFileAccess.getSharedUnlockCookieName(share.id)
               )?.value === "1");
+          const viewAccess = smartShareContract.evaluateContractAccess({
+            share,
+            actorIsVerified: !!session.user.isVerified,
+            action: smartShareContract.ACTIONS.VIEW,
+          });
+          const downloadAccess =
+            isUnlocked && viewAccess.ok
+              ? smartShareContract.evaluateContractAccess({
+                  share,
+                  actorIsVerified: !!session.user.isVerified,
+                  action: smartShareContract.ACTIONS.DOWNLOAD,
+                })
+              : { ok: false };
           const shapedResponse = protectedFileAccess.buildSharedFileResponse({
             share,
             file,
-            unlocked: isUnlocked,
+            unlocked: isUnlocked && viewAccess.ok,
           });
 
           return {
@@ -116,7 +128,26 @@ export async function GET(request) {
             shareExpired,
             passwordProtected: shapedResponse.passwordProtected,
             unlocked: shapedResponse.unlocked,
+            verifiedUsersOnly: contractState.verifiedUsersOnly,
+            allowDownload: contractState.allowDownload,
+            maxViews: contractState.maxViews,
+            maxDownloads: contractState.maxDownloads,
+            currentViewCount: contractState.currentViewCount,
+            currentDownloadCount: contractState.currentDownloadCount,
+            lastAccessedAt: contractState.lastAccessedAt,
+            remainingViews: contractState.remainingViews,
+            remainingDownloads: contractState.remainingDownloads,
+            downloadAllowed: !!downloadAccess.ok,
+            accessBlockedCode: viewAccess.ok
+              ? downloadAccess.ok
+                ? null
+                : downloadAccess.code || null
+              : viewAccess.code || null,
             ...shapedResponse.file,
+            fileURL:
+              shapedResponse.file.fileURL && downloadAccess.ok
+                ? shapedResponse.file.fileURL
+                : undefined,
           };
           })
         )

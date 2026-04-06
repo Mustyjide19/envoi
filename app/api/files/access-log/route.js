@@ -3,9 +3,16 @@ import { auth } from "../../../../auth";
 import { adminDb } from "../../../../firebaseAdmin";
 import { FILE_ACTIONS, logFileAction } from "../../../../utils/fileAccessLog";
 import protectedFileAccess from "../../../../utils/protectedFileAccess";
-import shareLinkExpiry from "../../../../utils/shareLinkExpiry";
+import smartShareContract from "../../../../utils/smartShareContract";
 
 export const runtime = "nodejs";
+
+function buildContractErrorResponse(result) {
+  return NextResponse.json(
+    { error: result.message, code: result.code },
+    { status: result.status }
+  );
+}
 
 export async function POST(request) {
   try {
@@ -20,6 +27,8 @@ export async function POST(request) {
 
     const body = await request.json();
     const fileId = typeof body?.fileId === "string" ? body.fileId : "";
+    const requestedShareId =
+      typeof body?.shareId === "string" ? body.shareId : "";
 
     if (!fileId) {
       return NextResponse.json(
@@ -41,45 +50,107 @@ export async function POST(request) {
     const isOwner = file.userEmail === session.user.email;
 
     let hasSharedAccess = false;
+    let selectedShare = null;
 
     if (!isOwner) {
-      const [sharedByUserSnapshot, sharedByEmailSnapshot] = await Promise.all([
-        session.user.id
-          ? adminDb
-              .collection("sharedFiles")
-              .where("fileId", "==", fileId)
-              .where("recipientUserId", "==", session.user.id)
-              .limit(1)
-              .get()
-          : Promise.resolve({ empty: true }),
-        adminDb
+      let matchingShares = [];
+
+      if (requestedShareId) {
+        const requestedShareSnap = await adminDb
           .collection("sharedFiles")
-          .where("fileId", "==", fileId)
-          .where("recipientEmail", "==", session.user.email)
-          .limit(1)
-          .get(),
-      ]);
+          .doc(requestedShareId)
+          .get();
 
-      const matchingShares = [
-        ...sharedByUserSnapshot.docs.map((doc) => doc.data()),
-        ...sharedByEmailSnapshot.docs.map((doc) => doc.data()),
-      ];
+        if (requestedShareSnap.exists) {
+          matchingShares = [requestedShareSnap.data()];
+        }
+      } else {
+        const [sharedByUserSnapshot, sharedByEmailSnapshot] = await Promise.all([
+          session.user.id
+            ? adminDb
+                .collection("sharedFiles")
+                .where("fileId", "==", fileId)
+                .where("recipientUserId", "==", session.user.id)
+                .get()
+            : Promise.resolve({ docs: [] }),
+          adminDb
+            .collection("sharedFiles")
+            .where("fileId", "==", fileId)
+            .where("recipientEmail", "==", session.user.email)
+            .get(),
+        ]);
 
-      hasSharedAccess = matchingShares.some((share) => {
-        if (shareLinkExpiry.isShareLinkExpired(share.shareExpiresAt)) {
-          return false;
+        const shareMap = new Map();
+        [...sharedByUserSnapshot.docs, ...sharedByEmailSnapshot.docs].forEach(
+          (doc) => {
+            shareMap.set(doc.id, doc.data());
+          }
+        );
+
+        matchingShares = Array.from(shareMap.values());
+      }
+
+      for (const share of matchingShares) {
+        if (!share || share.fileId !== fileId) {
+          continue;
         }
 
-        if (!share.sharePasswordHash && !share.sharePassword) {
-          return true;
+        const recipientMatches =
+          share.recipientUserId === session.user.id ||
+          share.recipientEmail === session.user.email;
+
+        if (!recipientMatches) {
+          continue;
         }
 
-        return (
+        const isUnlocked =
+          (!share.sharePasswordHash && !share.sharePassword) ||
           request.cookies.get(
             protectedFileAccess.getSharedUnlockCookieName(share.id)
-          )?.value === "1"
-        );
-      });
+          )?.value === "1";
+
+        if (!isUnlocked) {
+          if (requestedShareId) {
+            return NextResponse.json(
+              { error: "Complete the share access requirements first." },
+              { status: 403 }
+            );
+          }
+
+          continue;
+        }
+
+        if (requestedShareId) {
+          selectedShare = share;
+          break;
+        }
+
+        const contractAccess = smartShareContract.evaluateContractAccess({
+          share,
+          actorIsVerified: !!session.user.isVerified,
+          action: smartShareContract.ACTIONS.DOWNLOAD,
+        });
+
+        if (contractAccess.ok) {
+          selectedShare = share;
+          break;
+        }
+      }
+
+      hasSharedAccess = !!selectedShare;
+
+      if (!hasSharedAccess && requestedShareId && matchingShares.length > 0) {
+        const requestedShare = matchingShares[0];
+        const contractAccess = smartShareContract.evaluateContractAccess({
+          share: requestedShare,
+          actorIsVerified: !!session.user.isVerified,
+          action: smartShareContract.ACTIONS.DOWNLOAD,
+        });
+
+        if (!contractAccess.ok) {
+          return buildContractErrorResponse(contractAccess);
+        }
+      }
     }
 
     if (!isOwner && !hasSharedAccess) {
@@ -89,6 +160,76 @@ export async function POST(request) {
       );
     }
 
+    if (!isOwner && selectedShare) {
+      try {
+        await adminDb.runTransaction(async (transaction) => {
+          const shareRef = adminDb.collection("sharedFiles").doc(selectedShare.id);
+          const transactionShareSnap = await transaction.get(shareRef);
+
+          if (!transactionShareSnap.exists) {
+            const error = new Error("Shared file not found.");
+            error.status = 404;
+            throw error;
+          }
+
+          const latestShare = transactionShareSnap.data();
+          const recipientMatches =
+            latestShare.recipientUserId === session.user.id ||
+            latestShare.recipientEmail === session.user.email;
+
+          if (!recipientMatches) {
+            const error = new Error("Forbidden.");
+            error.status = 403;
+            throw error;
+          }
+
+          const latestUnlocked =
+            (!latestShare.sharePasswordHash && !latestShare.sharePassword) ||
+            request.cookies.get(
+              protectedFileAccess.getSharedUnlockCookieName(latestShare.id)
+            )?.value === "1";
+
+          if (!latestUnlocked) {
+            const error = new Error("Complete the share access requirements first.");
+            error.status = 403;
+            throw error;
+          }
+
+          const contractAccess = smartShareContract.evaluateContractAccess({
+            share: latestShare,
+            actorIsVerified: !!session.user.isVerified,
+            action: smartShareContract.ACTIONS.DOWNLOAD,
+          });
+
+          if (!contractAccess.ok) {
+            const error = new Error(contractAccess.message);
+            error.contractResult = contractAccess;
+            throw error;
+          }
+
+          const update = smartShareContract.getAccessUpdatePayload(
+            latestShare,
+            smartShareContract.ACTIONS.DOWNLOAD
+          );
+
+          transaction.update(shareRef, update);
+        });
+      } catch (error) {
+        if (error?.contractResult) {
+          return buildContractErrorResponse(error.contractResult);
+        }
+
+        if (error?.status === 404 || error?.status === 403) {
+          return NextResponse.json(
+            { error: error.message },
+            { status: error.status }
+          );
+        }
+
+        throw error;
+      }
+    }
+
     await logFileAction({
       fileId,
       actorUserId: session.user.id,
@@ -96,7 +237,10 @@ export async function POST(request) {
       action: FILE_ACTIONS.DOWNLOAD,
     });
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({
+      ok: true,
+      shareId: selectedShare?.id || null,
+    });
   } catch (error) {
     console.error("POST /api/files/access-log failed:", error);
     return NextResponse.json(

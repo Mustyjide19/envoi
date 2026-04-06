@@ -123,6 +123,11 @@ export default function FilesPage() {
       return;
     }
 
+    if (activeTab === "shared" && file.allowDownload === false && file.shareId) {
+      router.push(`/shared-files/${file.shareId}`);
+      return;
+    }
+
     if (!file.fileURL) {
       if (activeTab === "shared" && file.shareId) {
         router.push(`/shared-files/${file.shareId}`);
@@ -133,17 +138,32 @@ export default function FilesPage() {
     }
 
     try {
-      await fetch("/api/files/access-log", {
+      const response = await fetch("/api/files/access-log", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           fileId: file.id,
+          shareId: activeTab === "shared" ? file.shareId : undefined,
         }),
       });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        alert(data?.error || "Download unavailable.");
+
+        if (activeTab === "shared" && file.shareId) {
+          router.push(`/shared-files/${file.shareId}`);
+        }
+
+        return;
+      }
     } catch (error) {
       console.error("Failed to log download:", error);
+      alert("Download unavailable.");
+      return;
     }
 
     window.open(file.fileURL, "_blank");
@@ -607,14 +627,20 @@ export default function FilesPage() {
                     onClick={() => handleDownload(file)}
                     className="rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-100"
                     title={
-                      !file.fileURL
+                      file.allowDownload === false
+                        ? "This share is view only inside Envoi"
+                        : !file.fileURL
                         ? activeTab === "shared"
                           ? "Open the shared file page to complete access requirements"
                           : "Open the file preview page to access this file"
                         : "Download"
                     }
                   >
-                    {!file.fileURL ? "Open to Download" : "Download"}
+                    {file.allowDownload === false
+                      ? "View Only"
+                      : !file.fileURL
+                        ? "Open to Download"
+                        : "Download"}
                   </button>
                   {activeTab === "owned" && (
                     <button

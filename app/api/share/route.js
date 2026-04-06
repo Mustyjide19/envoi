@@ -7,6 +7,7 @@ import directShareValidation from "../../../utils/directShareValidation";
 import { FILE_ACTIONS, logFileAction } from "../../../utils/fileAccessLog";
 import shareLinkExpiry from "../../../utils/shareLinkExpiry";
 import { createShareNotification } from "../../../utils/shareNotifications";
+import smartShareContract from "../../../utils/smartShareContract";
 
 const prisma = new PrismaClient();
 export const runtime = "nodejs";
@@ -27,6 +28,11 @@ export async function POST(request) {
       recipientEmail,
       sharePassword,
       shareExpiryOption,
+      expiresAt,
+      verifiedUsersOnly,
+      maxViews,
+      maxDownloads,
+      allowDownload,
     } = await request.json();
     if (!fileId || !recipientEmail) {
       return NextResponse.json(
@@ -87,12 +93,40 @@ export async function POST(request) {
     const resolvedExpiry = shareLinkExpiry.resolveShareLinkExpiry(
       typeof shareExpiryOption === "string" ? shareExpiryOption : ""
     );
+    const contractValidation = smartShareContract.normalizeShareContractInput({
+      verifiedUsersOnly,
+      allowDownload,
+      expiresAt:
+        typeof expiresAt === "string" && expiresAt.trim()
+          ? expiresAt
+          : resolvedExpiry.linkExpiresAt || "",
+      maxViews,
+      maxDownloads,
+    });
+
+    if (!contractValidation.ok) {
+      return NextResponse.json(
+        {
+          error: contractValidation.message,
+          code: contractValidation.code,
+        },
+        { status: 400 }
+      );
+    }
+
     const normalizedSharePassword =
       typeof sharePassword === "string" ? sharePassword.trim() : "";
     const sharePasswordHash = normalizedSharePassword
       ? await bcrypt.hash(normalizedSharePassword, 10)
       : "";
     const isUpdating = existingShareSnapshot.exists;
+    const existingShareData = existingShareSnapshot.exists
+      ? existingShareSnapshot.data()
+      : {};
+    const contractFields = smartShareContract.toShareContractFields(
+      contractValidation.value,
+      existingShareData
+    );
 
     await adminDb.collection("sharedFiles").doc(shareId).set({
       id: shareId,
@@ -104,10 +138,13 @@ export async function POST(request) {
       recipientEmail: recipient.email,
       sharePassword: "",
       sharePasswordHash,
-      shareExpiryOption: resolvedExpiry.linkExpiryOption,
-      shareExpiresAt: resolvedExpiry.linkExpiresAt,
+      shareExpiryOption:
+        typeof expiresAt === "string" && expiresAt.trim()
+          ? shareLinkExpiry.SHARE_LINK_EXPIRY_OPTIONS.NEVER
+          : resolvedExpiry.linkExpiryOption,
       sharePasswordFailedAttempts: 0,
       sharePasswordLockedUntil: null,
+      ...contractFields,
       sharedAt: existingShareSnapshot.exists
         ? existingShareSnapshot.data().sharedAt || sharedAt
         : sharedAt,
