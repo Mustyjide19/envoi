@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { auth } from "../../../../../auth";
 import { adminDb } from "../../../../../firebaseAdmin";
+import { FILE_ACTIONS, logFileAction } from "../../../../../utils/fileAccessLog";
 import passwordAttemptLimiter from "../../../../../utils/passwordAttemptLimiter";
 import protectedFileAccess from "../../../../../utils/protectedFileAccess";
 import shareLinkExpiry from "../../../../../utils/shareLinkExpiry";
@@ -38,6 +39,23 @@ export async function POST(request, { params }) {
 
     const share = shareSnap.data();
     const now = Date.now();
+    if (share.revokedAt) {
+      await logSecurityEvent({
+        eventType: SECURITY_EVENT_TYPES.ACCESS_DENIED,
+        fileId: share.fileId,
+        shareId,
+        actorUserId: session.user.id,
+        actorEmail: session.user.email,
+        reasonCode: "SHARE_REVOKED",
+        message: "A revoked share was used in the unlock flow.",
+        severity: "warning",
+      });
+      return NextResponse.json(
+        { error: "This shared file is no longer available.", code: "SHARE_REVOKED" },
+        { status: 410 }
+      );
+    }
+
     if (shareLinkExpiry.isShareLinkExpired(share.shareExpiresAt, now)) {
       await logSecurityEvent({
         eventType: SECURITY_EVENT_TYPES.SHARED_LINK_EXPIRED_ACCESS,
@@ -57,6 +75,16 @@ export async function POST(request, { params }) {
       share.recipientEmail === session.user.email;
 
     if (!recipientMatches) {
+      await logSecurityEvent({
+        eventType: SECURITY_EVENT_TYPES.ACCESS_DENIED,
+        fileId: share.fileId,
+        shareId,
+        actorUserId: session.user.id,
+        actorEmail: session.user.email,
+        reasonCode: "RECIPIENT_MISMATCH",
+        message: "A non-recipient attempted to unlock a direct share.",
+        severity: "warning",
+      });
       return NextResponse.json(
         { error: "Forbidden." },
         { status: 403 }
@@ -71,6 +99,16 @@ export async function POST(request, { params }) {
     });
 
     if (!contractAccess.ok) {
+      await logSecurityEvent({
+        eventType: SECURITY_EVENT_TYPES.CONTRACT_RULE_VIOLATION,
+        fileId: share.fileId,
+        shareId,
+        actorUserId: session.user.id,
+        actorEmail: session.user.email,
+        reasonCode: contractAccess.code,
+        message: contractAccess.message,
+        severity: "warning",
+      });
       return NextResponse.json(
         { error: contractAccess.message, code: contractAccess.code },
         { status: contractAccess.status }
@@ -106,6 +144,15 @@ export async function POST(request, { params }) {
         sharePassword: "",
         sharePasswordFailedAttempts: 0,
         sharePasswordLockedUntil: null,
+      });
+
+      await logFileAction({
+        fileId: share.fileId,
+        actorUserId: session.user.id,
+        actorEmail: session.user.email,
+        action: FILE_ACTIONS.UNLOCK_SUCCESS,
+        shareId,
+        targetEmail: share.recipientEmail || null,
       });
 
       const response = NextResponse.json({ ok: true });

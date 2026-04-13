@@ -64,7 +64,7 @@ export async function GET(request) {
     });
 
     const shareRecords = Array.from(shareMap.values()).filter(
-      (share) => !share.collectionShareId
+      (share) => !share.collectionShareId && !share.revokedAt
     );
     const fileIds = [...new Set(shareRecords.map((share) => share.fileId).filter(Boolean))];
     const fileMap = new Map();

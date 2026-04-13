@@ -144,6 +144,9 @@ export async function POST(request) {
           : resolvedExpiry.linkExpiryOption,
       sharePasswordFailedAttempts: 0,
       sharePasswordLockedUntil: null,
+      revokedAt: null,
+      revokedByUserId: null,
+      revokedByEmail: null,
       ...contractFields,
       sharedAt: existingShareSnapshot.exists
         ? existingShareSnapshot.data().sharedAt || sharedAt
@@ -156,6 +159,15 @@ export async function POST(request) {
       actorUserId: session.user.id,
       actorEmail: session.user.email,
       action: FILE_ACTIONS.SHARE,
+      shareId,
+      targetEmail: recipient.email,
+      details: {
+        verifiedUsersOnly: contractFields.verifiedUsersOnly,
+        shareExpiresAt: contractFields.shareExpiresAt,
+        maxViews: contractFields.maxViews,
+        maxDownloads: contractFields.maxDownloads,
+        allowDownload: contractFields.allowDownload,
+      },
     });
 
     await createShareNotification({

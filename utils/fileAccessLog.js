@@ -6,6 +6,8 @@ export const FILE_ACTIONS = {
   SHARE: "SHARE",
   DOWNLOAD: "DOWNLOAD",
   REVOKE_ACCESS: "REVOKE_ACCESS",
+  UNLOCK_SUCCESS: "UNLOCK_SUCCESS",
+  EXPIRE_ACCESS: "EXPIRE_ACCESS",
 };
 
 export async function logFileAction({
@@ -13,8 +15,11 @@ export async function logFileAction({
   actorUserId,
   actorEmail,
   action,
+  shareId = null,
+  targetEmail = null,
+  details = null,
 }) {
-  if (!fileId || !actorEmail || !action) {
+  if (!fileId || !action) {
     return;
   }
 
@@ -23,6 +28,9 @@ export async function logFileAction({
     actorUserId: actorUserId || null,
     actorEmail,
     action,
+    shareId,
+    targetEmail,
+    details,
     timestamp: new Date().toISOString(),
   });
 }

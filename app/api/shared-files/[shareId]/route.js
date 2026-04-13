@@ -19,6 +19,23 @@ function buildContractErrorResponse(result) {
   );
 }
 
+async function logContractViolation({ share, shareId, session, result }) {
+  await logSecurityEvent({
+    eventType: SECURITY_EVENT_TYPES.CONTRACT_RULE_VIOLATION,
+    fileId: share.fileId,
+    shareId,
+    actorUserId: session.user.id,
+    actorEmail: session.user.email,
+    reasonCode: result.code,
+    message: result.message,
+    severity:
+      result.code === "SHARE_DOWNLOAD_LIMIT_REACHED" ||
+      result.code === "SHARE_VIEW_LIMIT_REACHED"
+        ? "warning"
+        : "info",
+  });
+}
+
 export async function GET(request, { params }) {
   try {
     const session = await auth();
@@ -41,6 +58,23 @@ export async function GET(request, { params }) {
     }
 
     const shareData = shareSnap.data();
+    if (shareData.revokedAt) {
+      await logSecurityEvent({
+        eventType: SECURITY_EVENT_TYPES.ACCESS_DENIED,
+        fileId: shareData.fileId,
+        shareId,
+        actorUserId: session.user.id,
+        actorEmail: session.user.email,
+        reasonCode: "SHARE_REVOKED",
+        message: "A revoked share was accessed.",
+        severity: "warning",
+      });
+      return NextResponse.json(
+        { error: "This shared file is no longer available.", code: "SHARE_REVOKED" },
+        { status: 410 }
+      );
+    }
+
     if (shareLinkExpiry.isShareLinkExpired(shareData.shareExpiresAt)) {
       await logSecurityEvent({
         eventType: SECURITY_EVENT_TYPES.SHARED_LINK_EXPIRED_ACCESS,
@@ -60,6 +94,16 @@ export async function GET(request, { params }) {
       shareData.recipientEmail === session.user.email;
 
     if (!recipientMatches) {
+      await logSecurityEvent({
+        eventType: SECURITY_EVENT_TYPES.ACCESS_DENIED,
+        fileId: shareData.fileId,
+        shareId,
+        actorUserId: session.user.id,
+        actorEmail: session.user.email,
+        reasonCode: "RECIPIENT_MISMATCH",
+        message: "A non-recipient attempted to access a direct share.",
+        severity: "warning",
+      });
       return NextResponse.json(
         { error: "Forbidden." },
         { status: 403 }
@@ -73,6 +117,12 @@ export async function GET(request, { params }) {
     });
 
     if (!contractAccess.ok) {
+      await logContractViolation({
+        share: shareData,
+        shareId,
+        session,
+        result: contractAccess,
+      });
       return buildContractErrorResponse(contractAccess);
     }
 
@@ -133,6 +183,12 @@ export async function GET(request, { params }) {
         });
       } catch (error) {
         if (error?.contractResult) {
+          await logContractViolation({
+            share: shareData,
+            shareId,
+            session,
+            result: error.contractResult,
+          });
           return buildContractErrorResponse(error.contractResult);
         }
 
@@ -151,6 +207,8 @@ export async function GET(request, { params }) {
         actorUserId: session.user.id,
         actorEmail: session.user.email,
         action: FILE_ACTIONS.VIEW,
+        shareId,
+        targetEmail: resolvedShare.recipientEmail || null,
       });
     }
 

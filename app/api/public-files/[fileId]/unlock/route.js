@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "../../../../../firebaseAdmin";
+import { FILE_ACTIONS, logFileAction } from "../../../../../utils/fileAccessLog";
 import passwordAttemptLimiter from "../../../../../utils/passwordAttemptLimiter";
 import protectedFileAccess from "../../../../../utils/protectedFileAccess";
 import shareLinkExpiry from "../../../../../utils/shareLinkExpiry";
@@ -57,6 +58,17 @@ export async function POST(request, context) {
 
     if (password === file.password) {
       await fileRef.update(passwordAttemptLimiter.getSuccessfulAttemptReset());
+
+      await logFileAction({
+        fileId,
+        actorUserId: null,
+        actorEmail: null,
+        action: FILE_ACTIONS.UNLOCK_SUCCESS,
+        details: {
+          source: "public_link",
+          accessType: "public",
+        },
+      });
 
       const response = NextResponse.json({ ok: true });
       response.cookies.set({

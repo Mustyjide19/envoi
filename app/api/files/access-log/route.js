@@ -4,6 +4,10 @@ import { adminDb } from "../../../../firebaseAdmin";
 import { FILE_ACTIONS, logFileAction } from "../../../../utils/fileAccessLog";
 import protectedFileAccess from "../../../../utils/protectedFileAccess";
 import smartShareContract from "../../../../utils/smartShareContract";
+import {
+  logSecurityEvent,
+  SECURITY_EVENT_TYPES,
+} from "../../../../utils/securityEventLog";
 
 export const runtime = "nodejs";
 
@@ -12,6 +16,26 @@ function buildContractErrorResponse(result) {
     { error: result.message, code: result.code },
     { status: result.status }
   );
+}
+
+async function logShareSecurityEvent({
+  eventType,
+  share,
+  session,
+  reasonCode = null,
+  message = null,
+  severity = "info",
+}) {
+  await logSecurityEvent({
+    eventType,
+    fileId: share?.fileId || null,
+    shareId: share?.id || null,
+    actorUserId: session.user.id || null,
+    actorEmail: session.user.email || null,
+    reasonCode,
+    message,
+    severity,
+  });
 }
 
 export async function POST(request) {
@@ -95,11 +119,40 @@ export async function POST(request) {
           continue;
         }
 
+        if (share.revokedAt) {
+          if (requestedShareId) {
+            await logShareSecurityEvent({
+              eventType: SECURITY_EVENT_TYPES.ACCESS_DENIED,
+              share,
+              session,
+              reasonCode: "SHARE_REVOKED",
+              message: "A revoked share was used in the download flow.",
+              severity: "warning",
+            });
+            return NextResponse.json(
+              { error: "This shared file is no longer available.", code: "SHARE_REVOKED" },
+              { status: 410 }
+            );
+          }
+
+          continue;
+        }
+
         const recipientMatches =
           share.recipientUserId === session.user.id ||
           share.recipientEmail === session.user.email;
 
         if (!recipientMatches) {
+          if (requestedShareId) {
+            await logShareSecurityEvent({
+              eventType: SECURITY_EVENT_TYPES.ACCESS_DENIED,
+              share,
+              session,
+              reasonCode: "RECIPIENT_MISMATCH",
+              message: "A non-recipient attempted to download from a direct share.",
+              severity: "warning",
+            });
+          }
           continue;
         }
 
@@ -111,6 +164,14 @@ export async function POST(request) {
 
         if (!isUnlocked) {
           if (requestedShareId) {
+            await logShareSecurityEvent({
+              eventType: SECURITY_EVENT_TYPES.ACCESS_DENIED,
+              share,
+              session,
+              reasonCode: "SHARE_NOT_UNLOCKED",
+              message: "A download was attempted before unlock requirements were met.",
+              severity: "info",
+            });
             return NextResponse.json(
               { error: "Complete the share access requirements first." },
               { status: 403 }
@@ -148,6 +209,14 @@ export async function POST(request) {
         });
 
         if (!contractAccess.ok) {
+          await logShareSecurityEvent({
+            eventType: SECURITY_EVENT_TYPES.CONTRACT_RULE_VIOLATION,
+            share: requestedShare,
+            session,
+            reasonCode: contractAccess.code,
+            message: contractAccess.message,
+            severity: "warning",
+          });
           return buildContractErrorResponse(contractAccess);
         }
       }
@@ -216,10 +285,28 @@ export async function POST(request) {
         });
       } catch (error) {
         if (error?.contractResult) {
+          await logShareSecurityEvent({
+            eventType: SECURITY_EVENT_TYPES.CONTRACT_RULE_VIOLATION,
+            share: selectedShare,
+            session,
+            reasonCode: error.contractResult.code,
+            message: error.contractResult.message,
+            severity: "warning",
+          });
           return buildContractErrorResponse(error.contractResult);
         }
 
         if (error?.status === 404 || error?.status === 403) {
+          if (selectedShare) {
+            await logShareSecurityEvent({
+              eventType: SECURITY_EVENT_TYPES.ACCESS_DENIED,
+              share: selectedShare,
+              session,
+              reasonCode: error.status === 404 ? "SHARE_NOT_FOUND" : "ACCESS_DENIED",
+              message: error.message,
+              severity: "warning",
+            });
+          }
           return NextResponse.json(
             { error: error.message },
             { status: error.status }
@@ -235,6 +322,8 @@ export async function POST(request) {
       actorUserId: session.user.id,
       actorEmail: session.user.email,
       action: FILE_ACTIONS.DOWNLOAD,
+      shareId: selectedShare?.id || null,
+      targetEmail: selectedShare?.recipientEmail || null,
     });
 
     return NextResponse.json({

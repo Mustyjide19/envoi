@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import FileInfo from "./_components/FileInfo";
 import FileShareForm from "./_components/FileShareForm";
 
@@ -74,7 +75,7 @@ function FilePreview({ params }) {
   return (
     <div className="app-page min-h-screen px-5 py-10">
       <div className="mx-auto max-w-6xl">
-        <div className="flex justify-center mb-8">
+        <div className="mb-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:justify-between">
           <button
             onClick={() => window.history.back()}
             className="app-text-muted flex items-center gap-2 font-medium hover:opacity-80"
@@ -84,6 +85,18 @@ function FilePreview({ params }) {
             </svg>
             Go to Upload
           </button>
+
+          {fileId && (
+            <Link
+              href={`/file-preview/${fileId}/security`}
+              className="app-accent-btn inline-flex items-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 3.866-3.582 7-8 7 0-3.866 3.582-7 8-7zm0 0c4.418 0 8 3.134 8 7-4.418 0-8-3.134-8-7zm0 0V5m0 0l-3 3m3-3l3 3" />
+              </svg>
+              Security Center
+            </Link>
+          )}
         </div>
 
         <div className="flex items-center justify-center">
@@ -119,7 +132,9 @@ function FilePreview({ params }) {
                             {formatTimestamp(log.timestamp)}
                           </span>
                         </div>
-                        <p className="app-text text-sm">{log.actorEmail}</p>
+                        <p className="app-text text-sm">
+                          {log.actorEmail || "Anonymous public visitor"}
+                        </p>
                       </div>
                     ))}
                   </div>

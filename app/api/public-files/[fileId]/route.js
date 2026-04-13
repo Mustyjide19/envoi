@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "../../../../firebaseAdmin";
+import { FILE_ACTIONS, logFileAction } from "../../../../utils/fileAccessLog";
 import protectedFileAccess from "../../../../utils/protectedFileAccess";
 import shareLinkExpiry from "../../../../utils/shareLinkExpiry";
 import {
@@ -38,6 +39,19 @@ export async function GET(request, context) {
       request.cookies.get(
         protectedFileAccess.getPublicUnlockCookieName(fileId)
       )?.value === "1";
+
+    if (isUnlocked) {
+      await logFileAction({
+        fileId,
+        actorUserId: null,
+        actorEmail: null,
+        action: FILE_ACTIONS.VIEW,
+        details: {
+          source: "public_link",
+          accessType: "public",
+        },
+      });
+    }
 
     return NextResponse.json(
       protectedFileAccess.buildPublicFileResponse(
