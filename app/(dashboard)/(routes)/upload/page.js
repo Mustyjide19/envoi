@@ -13,6 +13,7 @@ import {
 import { generateRandomString } from "../../../_utils/GenerateRandomString";
 import fileValidation from "../../../../utils/fileValidation";
 import sensitivityLabels from "../../../../utils/sensitivityLabels";
+import appUrl from "../../../../utils/appUrl";
 
 function Upload() {
   const { status } = useSession();
@@ -22,10 +23,6 @@ function Upload() {
   const [fileId, setFileDocId] = useState();
   const [progress, setProgress] = useState(0);
   const [uploadCompleted, setUploadCompleted] = useState(false);
-  const baseUrl =
-    process.env.APP_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    "http://localhost:3000";
 
   const normalizeTags = (rawTags = "") => {
     if (typeof rawTags !== "string") {
@@ -99,6 +96,10 @@ function Upload() {
     sensitivityLabel = ""
   ) => {
     const docId = generateRandomString().toString();
+    const baseUrl = appUrl.getClientAppUrl(
+      process.env,
+      typeof window !== "undefined" ? window.location.origin : undefined
+    );
 
     try {
       const response = await fetch("/api/files", {
@@ -116,7 +117,7 @@ function Upload() {
           description,
           tags,
           sensitivityLabel,
-          shortUrl: `${baseUrl}/${docId}`,
+          shortUrl: appUrl.buildShortUrl(docId, baseUrl),
         }),
       });
 
