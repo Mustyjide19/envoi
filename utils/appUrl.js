@@ -46,6 +46,15 @@ function buildFileViewUrl(fileId, baseUrl) {
   return `${normalizeAppUrl(baseUrl) || LOCAL_APP_URL}/file-view/${fileId}`;
 }
 
+function buildResetPasswordUrl(token, baseUrl) {
+  if (!token) {
+    return "";
+  }
+
+  const normalizedBaseUrl = normalizeAppUrl(baseUrl) || LOCAL_APP_URL;
+  return `${normalizedBaseUrl}/reset-password?token=${encodeURIComponent(token)}`;
+}
+
 function resolveDisplayedShortUrl({
   storedUrl,
   fileId,
@@ -84,6 +93,7 @@ const appUrl = {
   getClientAppUrl,
   buildShortUrl,
   buildFileViewUrl,
+  buildResetPasswordUrl,
   resolveDisplayedShortUrl,
 };
 

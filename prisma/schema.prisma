@@ -20,6 +20,9 @@ model User {
   isVerified  Boolean   @default(false)
   verificationTokenHash      String?
   verificationTokenExpiresAt DateTime?
+  passwordResetTokenHash      String?
+  passwordResetTokenExpiresAt DateTime?
+  passwordResetRequestedAt    DateTime?
 }
 
 model Account {

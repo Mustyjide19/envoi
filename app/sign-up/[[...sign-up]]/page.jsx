@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getProviders, signIn } from "next-auth/react";
+import passwordValidation from "../../../utils/passwordValidation";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -40,16 +41,6 @@ export default function SignUpPage() {
     };
   }, []);
 
-  const validatePassword = (password) => {
-    const errors = [];
-    if (password.length < 8) errors.push("at least 8 characters");
-    if (!/[A-Z]/.test(password)) errors.push("one uppercase letter");
-    if (!/[a-z]/.test(password)) errors.push("one lowercase letter");
-    if (!/[0-9]/.test(password)) errors.push("one number");
-    if (!/[!@#$%^&*]/.test(password)) errors.push("one special character (!@#$%^&*)");
-    return errors;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
@@ -61,7 +52,9 @@ export default function SignUpPage() {
     if (!formData.email) newErrors.email = "Email is required";
     if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Email is invalid";
 
-    const passwordErrors = validatePassword(formData.password);
+    const passwordErrors = passwordValidation.getPasswordValidationErrors(
+      formData.password
+    );
     if (passwordErrors.length > 0) {
       newErrors.password = `Password must contain ${passwordErrors.join(", ")}`;
     }
