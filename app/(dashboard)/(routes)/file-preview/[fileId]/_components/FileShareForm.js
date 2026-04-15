@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { checkPasswordStrength } from "../../../../../../utils/passwordStrength";
 import shareLinkExpiry from "../../../../../../utils/shareLinkExpiry";
+import appUrl from "../../../../../../utils/appUrl";
 
 function getCurrentLocalDateTimeValue() {
   const now = new Date();
@@ -33,6 +34,7 @@ function FileShareForm({ file, onPasswordSave }) {
   const [isDirectSharing, setIsDirectSharing] = useState(false);
   const [directShareMessage, setDirectShareMessage] = useState("");
   const [directShareError, setDirectShareError] = useState("");
+  const [currentOrigin, setCurrentOrigin] = useState("");
   const passwordStrength = password ? checkPasswordStrength(password) : null;
   const strengthBarClass =
     passwordStrength?.level === "strong"
@@ -50,6 +52,18 @@ function FileShareForm({ file, onPasswordSave }) {
   useEffect(() => {
     setLinkExpiryOption(file?.linkExpiryOption || shareLinkExpiry.SHARE_LINK_EXPIRY_OPTIONS.NEVER);
   }, [file?.linkExpiryOption]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setCurrentOrigin(window.location.origin);
+    }
+  }, []);
+
+  const resolvedShortUrl = appUrl.resolveDisplayedShortUrl({
+    storedUrl: file?.shortUrl,
+    fileId: file?.id,
+    currentOrigin,
+  });
 
   const handleSavePassword = async () => {
     if (!file?.id) return;
@@ -134,8 +148,8 @@ function FileShareForm({ file, onPasswordSave }) {
       return;
     }
 
-    if (file?.shortUrl) {
-      navigator.clipboard.writeText(file.shortUrl);
+    if (resolvedShortUrl) {
+      navigator.clipboard.writeText(resolvedShortUrl);
       alert("Link copied to clipboard!");
     }
   };
@@ -364,7 +378,7 @@ function FileShareForm({ file, onPasswordSave }) {
         <div className="flex items-center gap-2">
           <input
             type="text"
-            value={file?.shortUrl || ""}
+            value={resolvedShortUrl}
             readOnly
             className="app-surface-muted app-text flex-1 rounded-lg border px-4 py-3 text-sm"
           />

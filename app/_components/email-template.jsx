@@ -12,13 +12,10 @@ import {
   Section,
   Text,
 } from '@react-email/components';
+import appUrl from '../../utils/appUrl';
 
 export const EmailTemplate = ({ senderName, fileName, fileId }) => {
-  const baseUrl =
-    process.env.APP_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    "http://localhost:3000";
-  const sharedUrl = `${baseUrl}/file-view/${fileId}`;
+  const sharedUrl = appUrl.buildFileViewUrl(fileId, appUrl.getServerAppUrl());
   
   return (
     <Html>

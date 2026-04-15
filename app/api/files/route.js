@@ -6,13 +6,9 @@ import { FILE_ACTIONS, logFileAction } from "../../../utils/fileAccessLog";
 import protectedFileAccess from "../../../utils/protectedFileAccess";
 import smartShareContract from "../../../utils/smartShareContract";
 import sensitivityLabels from "../../../utils/sensitivityLabels";
+import appUrl from "../../../utils/appUrl";
 
 export const runtime = "nodejs";
-
-const baseUrl =
-  process.env.APP_URL ||
-  process.env.NEXT_PUBLIC_APP_URL ||
-  "http://localhost:3000";
 
 function sortNewestFirst(items, fieldName) {
   return [...items].sort((a, b) => {
@@ -229,7 +225,7 @@ export async function POST(request) {
       userName: session.user.name || "",
       userVerified: !!session.user.isVerified,
       password: "",
-      shortUrl: shortUrl || `${baseUrl}/${id}`,
+      shortUrl: shortUrl || appUrl.buildShortUrl(id, appUrl.getServerAppUrl()),
     });
 
     await logFileAction({

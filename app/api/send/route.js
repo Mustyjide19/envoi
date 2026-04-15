@@ -3,10 +3,9 @@ import { render } from '@react-email/render';
 import { EmailTemplate } from '../../_components/email-template';
 import { auth } from '../../../auth';
 import { PrismaClient } from '@prisma/client';
+import shareEmail from '../../../utils/shareEmail';
 
 const prisma = new PrismaClient();
-const emailMode = process.env.EMAIL_MODE?.trim().toLowerCase() || "live";
-const devEmail = process.env.DEV_EMAIL?.trim();
 
 export async function POST(request) {
   try {
@@ -29,6 +28,7 @@ export async function POST(request) {
     }
 
     const { recipientEmail, senderName, fileName, fileId } = await request.json();
+    const emailSettings = shareEmail.getShareEmailSettings();
 
     if (!recipientEmail || !senderName || !fileName || !fileId) {
       return Response.json(
@@ -45,10 +45,10 @@ export async function POST(request) {
       })
     );
 
-    if (emailMode === "dev") {
+    if (emailSettings.emailMode === "dev") {
       console.log("DEV email send:", {
         to: recipientEmail,
-        deliveredTo: devEmail || recipientEmail,
+        deliveredTo: emailSettings.devEmail || recipientEmail,
         subject: `${senderName} shared a file with you on Envoi`,
         fileId,
       });
@@ -56,41 +56,51 @@ export async function POST(request) {
       return Response.json({
         success: true,
         mode: "dev",
-        deliveredTo: devEmail || recipientEmail,
-        message: devEmail
-          ? `Dev email captured for ${devEmail}.`
+        deliveredTo: emailSettings.devEmail || recipientEmail,
+        message: emailSettings.devEmail
+          ? `Dev email captured for ${emailSettings.devEmail}.`
           : `Dev email captured for ${recipientEmail}.`,
       });
     }
 
-    if (!process.env.RESEND_API_KEY?.trim()) {
+    if (!emailSettings.configured) {
+      console.error("Share email delivery is not configured.", {
+        hasResendApiKey: !!emailSettings.resendApiKey,
+        hasEmailFromShare: !!emailSettings.emailFromShare,
+        emailMode: emailSettings.emailMode,
+      });
+
       return Response.json(
-        { error: "Email delivery is not configured." },
+        { error: "Share email delivery is not configured." },
         { status: 500 }
       );
     }
 
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    const { data, error } = await resend.emails.send({
-      from: 'Envoi <Envoi@resend.dev>',
-      to: [recipientEmail],
-      subject: `${senderName} shared a file with you on Envoi`,
-      html: emailHtml,
-    });
+    const resend = new Resend(emailSettings.resendApiKey);
+    const { data, error } = await resend.emails.send(
+      shareEmail.buildShareEmailPayload({
+        from: emailSettings.emailFromShare,
+        recipientEmail,
+        senderName,
+        emailHtml,
+      })
+    );
 
     if (error) {
-      console.error('Resend error:', error);
-      const errorMessage =
-        error.message === "API key is invalid"
-          ? "Email delivery is not configured correctly."
-          : error.message;
+      console.error('Resend share email error:', error);
 
-      return Response.json({ error: errorMessage }, { status: 500 });
+      return Response.json(
+        { error: "Failed to send share email right now." },
+        { status: 500 }
+      );
     }
 
     return Response.json({ success: true, data });
   } catch (error) {
-    console.error('Email sending error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('Share email sending error:', error);
+    return Response.json(
+      { error: "Failed to send share email right now." },
+      { status: 500 }
+    );
   }
 }
