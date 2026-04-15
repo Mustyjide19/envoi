@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import UserAvatar from "../../_components/UserAvatar";
 import FileContentPreview from "../../_components/FileContentPreview";
+import authRedirect from "../../../utils/authRedirect";
 
 export default function FileViewPage({ params }) {
-  const router = useRouter();
   const [fileId, setFileId] = useState(null);
   const [file, setFile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -15,6 +14,7 @@ export default function FileViewPage({ params }) {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [isExpired, setIsExpired] = useState(false);
+  const [isInvalid, setIsInvalid] = useState(false);
 
   useEffect(() => {
     params.then((resolvedParams) => {
@@ -38,6 +38,7 @@ export default function FileViewPage({ params }) {
         setFile(fileData);
         setIsUnlocked(!!fileData.unlocked || !fileData.passwordProtected);
         setIsExpired(false);
+        setIsInvalid(false);
       } else {
         const data = await response.json();
 
@@ -47,12 +48,12 @@ export default function FileViewPage({ params }) {
           return;
         }
 
-        alert("File not found or has been deleted");
-        router.push("/");
+        setIsInvalid(true);
+        setFile(null);
       }
     } catch (error) {
       console.error("Error fetching file:", error);
-      alert("Failed to load file");
+      setIsInvalid(true);
     } finally {
       setIsLoading(false);
     }
@@ -135,7 +136,11 @@ export default function FileViewPage({ params }) {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">File Not Found</h2>
-          <p className="text-gray-600 mb-6">This file may have been deleted or the link is incorrect.</p>
+          <p className="text-gray-600 mb-6">
+            {isInvalid
+              ? "This file may have been deleted or the link is incorrect."
+              : "This file is unavailable right now."}
+          </p>
         </div>
       </div>
     );
@@ -266,11 +271,28 @@ export default function FileViewPage({ params }) {
 
             <div className="mt-6 pt-6 border-t text-center">
               <p className="text-sm text-gray-500">
-                Want to share files securely too?{" "}
-                <a href="/" className="text-blue-600 hover:text-blue-700 font-semibold">
-                  Create a free Envoi account
-                </a>
+                Want to keep sharing securely with Envoi?
               </p>
+              <div className="mt-3 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <a
+                  href={authRedirect.buildAuthPageHref(
+                    "/sign-up",
+                    `/file-view/${fileId}`
+                  )}
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white"
+                >
+                  Create Account
+                </a>
+                <a
+                  href={authRedirect.buildAuthPageHref(
+                    "/sign-in",
+                    `/file-view/${fileId}`
+                  )}
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700"
+                >
+                  Sign In
+                </a>
+              </div>
             </div>
           </div>
         </div>

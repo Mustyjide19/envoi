@@ -17,13 +17,20 @@ export async function POST(request) {
 
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
-      select: { isVerified: true },
+      select: { id: true, isVerified: true, shareEmailSentAt: true },
     });
 
     if (!user?.isVerified) {
       return Response.json(
         { error: 'You must verify your account before sharing files.' },
         { status: 403 }
+      );
+    }
+
+    if (shareEmail.hasRecentShareEmailRequest(user.shareEmailSentAt)) {
+      return Response.json(
+        { error: 'Please wait before sending another share email.' },
+        { status: 429 }
       );
     }
 
@@ -51,6 +58,11 @@ export async function POST(request) {
         deliveredTo: emailSettings.devEmail || recipientEmail,
         subject: `${senderName} shared a file with you on Envoi`,
         fileId,
+      });
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { shareEmailSentAt: new Date() },
       });
 
       return Response.json({
@@ -94,6 +106,11 @@ export async function POST(request) {
         { status: 500 }
       );
     }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { shareEmailSentAt: new Date() },
+    });
 
     return Response.json({ success: true, data });
   } catch (error) {

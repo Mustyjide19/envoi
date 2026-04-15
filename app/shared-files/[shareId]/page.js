@@ -1,25 +1,24 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import UserAvatar from "../../_components/UserAvatar";
 import FileContentPreview from "../../_components/FileContentPreview";
 import shareLinkExpiry from "../../../utils/shareLinkExpiry";
 import smartShareContract from "../../../utils/smartShareContract";
+import authRedirect from "../../../utils/authRedirect";
 
 export default function SharedFilePage({ params }) {
-  const router = useRouter();
   const { status } = useSession();
   const [shareId, setShareId] = useState(null);
   const [sharedFile, setSharedFile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewState, setViewState] = useState("loading");
   const [error, setError] = useState("");
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [downloadError, setDownloadError] = useState("");
   const [isUnlocking, setIsUnlocking] = useState(false);
-  const [isExpired, setIsExpired] = useState(false);
   const [currentTime, setCurrentTime] = useState(Date.now());
 
   useEffect(() => {
@@ -28,20 +27,70 @@ export default function SharedFilePage({ params }) {
     });
   }, [params]);
 
+  const returnTo = shareId ? `/shared-files/${shareId}` : "/dashboard";
+  const signInHref = authRedirect.buildAuthPageHref("/sign-in", returnTo);
+  const signUpHref = authRedirect.buildAuthPageHref("/sign-up", returnTo);
+  const verifyHref = `/verify?returnTo=${encodeURIComponent(returnTo)}`;
+
+  const applyShareError = (statusCode, data) => {
+    if (statusCode === 404) {
+      setViewState("invalid");
+      setError("This shared file link is invalid or no longer exists.");
+      setSharedFile(null);
+      return;
+    }
+
+    if (statusCode === 410 || data?.code === "SHARE_EXPIRED") {
+      setViewState(data?.code === "SHARE_REVOKED" ? "revoked" : "expired");
+      setError(
+        data?.code === "SHARE_REVOKED"
+          ? "This share has been revoked by the file owner."
+          : "This shared file is no longer available."
+      );
+      setSharedFile(null);
+      return;
+    }
+
+    if (data?.code === "SHARE_VERIFICATION_REQUIRED") {
+      setViewState("verification_required");
+      setError(data?.error || "You need a verified Envoi account to open this share.");
+      setSharedFile(null);
+      return;
+    }
+
+    if (statusCode === 403) {
+      setViewState("unavailable");
+      setError(
+        data?.error ||
+          "This shared file is only available to the intended Envoi recipient."
+      );
+      setSharedFile(null);
+      return;
+    }
+
+    setViewState("unavailable");
+    setError(data?.error || "Unable to load shared file.");
+    setSharedFile(null);
+  };
+
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/sign-in");
+      setIsLoading(false);
+      setViewState("unauthenticated");
     }
-  }, [status, router]);
+  }, [status]);
 
   useEffect(() => {
-    if (!shareId || status !== "authenticated") return;
+    if (!shareId || status !== "authenticated") {
+      return;
+    }
 
     void loadSharedFile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shareId, status]);
 
   useEffect(() => {
-    if (!sharedFile?.share?.shareExpiresAt || isExpired) {
+    if (!sharedFile?.share?.shareExpiresAt || viewState !== "ready") {
       return undefined;
     }
 
@@ -50,12 +99,14 @@ export default function SharedFilePage({ params }) {
     }, 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [sharedFile?.share?.shareExpiresAt, isExpired]);
+  }, [sharedFile?.share?.shareExpiresAt, viewState]);
 
   const loadSharedFile = async () => {
     setIsLoading(true);
     setError("");
+    setPasswordError("");
     setDownloadError("");
+
     try {
       const response = await fetch(`/api/shared-files/${shareId}`, {
         cache: "no-store",
@@ -63,19 +114,14 @@ export default function SharedFilePage({ params }) {
       const data = await response.json();
 
       if (!response.ok) {
-        if (response.status === 410 || data?.code === "SHARE_EXPIRED") {
-          setIsExpired(true);
-          setSharedFile(null);
-          return;
-        }
-        setError(data?.error || "Unable to load shared file.");
-        setSharedFile(null);
+        applyShareError(response.status, data);
         return;
       }
 
-      setIsExpired(false);
       setSharedFile(data);
+      setViewState("ready");
     } catch {
+      setViewState("unavailable");
       setError("Unable to load shared file.");
     } finally {
       setIsLoading(false);
@@ -98,12 +144,19 @@ export default function SharedFilePage({ params }) {
       const data = await response.json();
 
       if (!response.ok) {
-        if (response.status === 410 || data?.code === "SHARE_EXPIRED") {
-          setIsExpired(true);
-          setSharedFile(null);
+        if (
+          response.status === 404 ||
+          response.status === 403 ||
+          response.status === 410 ||
+          data?.code === "SHARE_EXPIRED" ||
+          data?.code === "SHARE_REVOKED" ||
+          data?.code === "SHARE_VERIFICATION_REQUIRED"
+        ) {
+          applyShareError(response.status, data);
           setPassword("");
           return;
         }
+
         setPasswordError(data?.error || "Incorrect password. Please try again.");
         setPassword("");
         return;
@@ -144,36 +197,6 @@ export default function SharedFilePage({ params }) {
     contractState.allowDownload === false ||
     contractState.remainingDownloads === 0;
 
-  if (status === "loading" || isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-600">Loading shared file...</p>
-      </div>
-    );
-  }
-
-  if (error || !sharedFile?.file) {
-    if (isExpired) {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-8 text-center shadow-sm border border-gray-200">
-            <h1 className="mb-2 text-2xl font-bold text-gray-900">Shared File Expired</h1>
-            <p className="text-gray-600">This shared file is no longer available.</p>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="w-full max-w-md rounded-xl bg-white p-8 text-center shadow-sm border border-gray-200">
-          <h1 className="mb-2 text-2xl font-bold text-gray-900">Shared File Unavailable</h1>
-          <p className="text-gray-600">{error || "This shared file could not be loaded."}</p>
-        </div>
-      </div>
-    );
-  }
-
   const handleDownload = async () => {
     setDownloadError("");
 
@@ -192,9 +215,15 @@ export default function SharedFilePage({ params }) {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        if (response.status === 410 || data?.code === "SHARE_EXPIRED") {
-          setIsExpired(true);
-          setSharedFile(null);
+        if (
+          response.status === 404 ||
+          response.status === 403 ||
+          response.status === 410 ||
+          data?.code === "SHARE_EXPIRED" ||
+          data?.code === "SHARE_REVOKED" ||
+          data?.code === "SHARE_VERIFICATION_REQUIRED"
+        ) {
+          applyShareError(response.status, data);
           return;
         }
 
@@ -203,11 +232,79 @@ export default function SharedFilePage({ params }) {
       }
 
       window.open(file.fileURL, "_blank");
-    } catch (error) {
-      console.error("Failed to log download:", error);
+    } catch (downloadFailure) {
+      console.error("Failed to log download:", downloadFailure);
       setDownloadError("Download unavailable for this share.");
     }
   };
+
+  if (status === "loading" || (status === "authenticated" && isLoading)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-600">Loading shared file...</p>
+      </div>
+    );
+  }
+
+  if (viewState === "unauthenticated") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="w-full max-w-md rounded-xl bg-white p-8 text-center shadow-sm border border-gray-200">
+          <h1 className="mb-2 text-2xl font-bold text-gray-900">
+            Sign in to open this shared file
+          </h1>
+          <p className="mb-6 text-gray-600">
+            This Envoi share is meant for a specific recipient. Sign in with your
+            Envoi account to continue, or create one if you still need access.
+          </p>
+          <div className="space-y-3">
+            <a
+              href={signInHref}
+              className="block rounded-lg bg-blue-600 px-4 py-3 font-medium text-white"
+            >
+              Sign In
+            </a>
+            <a
+              href={signUpHref}
+              className="block rounded-lg border border-slate-300 px-4 py-3 font-medium text-slate-700"
+            >
+              Create Account
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (viewState !== "ready" || !sharedFile?.file) {
+    const titleByState = {
+      expired: "Shared File Expired",
+      revoked: "Shared File Revoked",
+      invalid: "Shared File Not Found",
+      verification_required: "Verification Required",
+      unavailable: "Shared File Unavailable",
+    };
+
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="w-full max-w-md rounded-xl bg-white p-8 text-center shadow-sm border border-gray-200">
+          <h1 className="mb-2 text-2xl font-bold text-gray-900">
+            {titleByState[viewState] || "Shared File Unavailable"}
+          </h1>
+          <p className="text-gray-600">{error || "This shared file could not be loaded."}</p>
+
+          {viewState === "verification_required" && (
+            <a
+              href={verifyHref}
+              className="mt-6 block rounded-lg bg-blue-600 px-4 py-3 font-medium text-white"
+            >
+              Verify My Account
+            </a>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
@@ -221,14 +318,18 @@ export default function SharedFilePage({ params }) {
                 email={share.ownerEmail}
                 size="sm"
               />
-              <p className="text-blue-100">Shared by {share.ownerName || share.ownerEmail}</p>
+              <p className="text-blue-100">
+                Shared by {share.ownerName || share.ownerEmail}
+              </p>
             </div>
           </div>
 
           <div className="p-8">
             <div className="flex items-center gap-4 mb-6 pb-6 border-b">
               <div className="flex-1">
-                <h2 className="text-2xl font-bold text-gray-900 mb-1">{file.fileName}</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">
+                  {file.fileName}
+                </h2>
                 <div className="flex items-center gap-4 text-sm text-gray-600">
                   <span>{file.fileType}</span>
                   <span>{(file.fileSize / 1024).toFixed(2)} KB</span>
@@ -258,14 +359,16 @@ export default function SharedFilePage({ params }) {
                   )}
                   {contractState?.maxViews !== null && (
                     <p>
-                      Opens remaining: {contractState.remainingViews} of {contractState.maxViews}
+                      Opens remaining: {contractState.remainingViews} of{" "}
+                      {contractState.maxViews}
                     </p>
                   )}
                   {contractState?.allowDownload === false ? (
                     <p>This share is view only. Downloads are disabled.</p>
                   ) : contractState?.maxDownloads !== null ? (
                     <p>
-                      Downloads remaining: {contractState.remainingDownloads} of {contractState.maxDownloads}
+                      Downloads remaining: {contractState.remainingDownloads} of{" "}
+                      {contractState.maxDownloads}
                     </p>
                   ) : null}
                 </div>
@@ -297,7 +400,7 @@ export default function SharedFilePage({ params }) {
                     <input
                       type="password"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(event) => setPassword(event.target.value)}
                       placeholder="Enter password"
                       className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                       disabled={isUnlocking}

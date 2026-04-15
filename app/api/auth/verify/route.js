@@ -25,6 +25,7 @@ export async function POST(request) {
         id: true,
         isVerified: true,
         verificationTokenExpiresAt: true,
+        verificationTokenHash: true,
       },
     });
 
@@ -57,10 +58,9 @@ export async function POST(request) {
       );
     }
 
-    if (
-      !user.verificationTokenExpiresAt ||
-      user.verificationTokenExpiresAt.getTime() < Date.now()
-    ) {
+    const tokenStatus = verificationTokenUtils.getVerificationTokenStatus(user);
+
+    if (!tokenStatus.ok && tokenStatus.reason === "expired") {
       return NextResponse.json(
         { error: "Verification token has expired.", reason: "expired" },
         { status: 400 }
@@ -69,15 +69,12 @@ export async function POST(request) {
 
     await prisma.user.update({
       where: { id: user.id },
-      data: {
-        isVerified: true,
-        verificationTokenHash: null,
-        verificationTokenExpiresAt: null,
-      },
+      data: verificationTokenUtils.buildVerificationSuccessUpdate(),
     });
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (error) {
+    console.error("Verification error:", error);
     return NextResponse.json(
       { error: "Verification failed.", reason: "invalid" },
       { status: 500 }

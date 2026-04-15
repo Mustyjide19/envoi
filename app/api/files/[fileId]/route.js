@@ -68,6 +68,13 @@ export async function PATCH(request, context) {
       );
     }
 
+    if (!session.user.isVerified) {
+      return NextResponse.json(
+        { error: "You must verify your account before sharing files." },
+        { status: 403 }
+      );
+    }
+
     const { fileId } = await context.params;
     const result = await getOwnedFile(session, fileId);
 

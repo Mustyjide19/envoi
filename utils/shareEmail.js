@@ -7,6 +7,8 @@ function normalizeEmailMode(value) {
   return normalizedValue || "live";
 }
 
+const SHARE_EMAIL_COOLDOWN_MS = 1000 * 60;
+
 function getShareEmailSettings(env = process.env) {
   const emailMode = normalizeEmailMode(env?.EMAIL_MODE);
   const resendApiKey =
@@ -42,10 +44,24 @@ function buildShareEmailPayload({
   };
 }
 
+function hasRecentShareEmailRequest(
+  sentAt,
+  now = Date.now(),
+  cooldownMs = SHARE_EMAIL_COOLDOWN_MS
+) {
+  if (!sentAt) {
+    return false;
+  }
+
+  return new Date(sentAt).getTime() > now - cooldownMs;
+}
+
 const shareEmail = {
+  SHARE_EMAIL_COOLDOWN_MS,
   normalizeEmailMode,
   getShareEmailSettings,
   buildShareEmailPayload,
+  hasRecentShareEmailRequest,
 };
 
 module.exports = shareEmail;

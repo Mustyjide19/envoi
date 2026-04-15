@@ -55,6 +55,22 @@ function buildResetPasswordUrl(token, baseUrl) {
   return `${normalizedBaseUrl}/reset-password?token=${encodeURIComponent(token)}`;
 }
 
+function buildVerificationUrl(token, baseUrl, returnTo = "") {
+  if (!token) {
+    return "";
+  }
+
+  const normalizedBaseUrl = normalizeAppUrl(baseUrl) || LOCAL_APP_URL;
+  const url = new URL(`${normalizedBaseUrl}/verify`);
+  url.searchParams.set("token", token);
+
+  if (typeof returnTo === "string" && returnTo.trim()) {
+    url.searchParams.set("returnTo", returnTo.trim());
+  }
+
+  return url.toString();
+}
+
 function resolveDisplayedShortUrl({
   storedUrl,
   fileId,
@@ -94,6 +110,7 @@ const appUrl = {
   buildShortUrl,
   buildFileViewUrl,
   buildResetPasswordUrl,
+  buildVerificationUrl,
   resolveDisplayedShortUrl,
 };
 

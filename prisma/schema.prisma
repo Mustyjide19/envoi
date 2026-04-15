@@ -20,9 +20,11 @@ model User {
   isVerified  Boolean   @default(false)
   verificationTokenHash      String?
   verificationTokenExpiresAt DateTime?
+  verificationEmailSentAt    DateTime?
   passwordResetTokenHash      String?
   passwordResetTokenExpiresAt DateTime?
   passwordResetRequestedAt    DateTime?
+  shareEmailSentAt           DateTime?
 }
 
 model Account {

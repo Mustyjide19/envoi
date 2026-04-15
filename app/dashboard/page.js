@@ -68,15 +68,17 @@ export default function Dashboard() {
     try {
       const response = await fetch("/api/auth/verify/regenerate", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
       });
       const data = await response.json();
 
-      if (!response.ok || !data?.verificationToken) {
+      if (!response.ok) {
         alert(data?.error || "Unable to start verification.");
         return;
       }
 
-      router.push(`/verify?token=${encodeURIComponent(data.verificationToken)}`);
+      router.push("/verify?emailSent=1");
     } catch {
       alert("Unable to start verification.");
     } finally {

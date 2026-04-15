@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getProviders, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import authRedirect from "../../../utils/authRedirect";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -14,6 +15,7 @@ export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [hasGoogleProvider, setHasGoogleProvider] = useState(false);
+  const [callbackUrl, setCallbackUrl] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -37,6 +39,20 @@ export default function SignInPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const searchParams = new URLSearchParams(window.location.search);
+    setCallbackUrl(
+      authRedirect.sanitizeRelativeRedirectPath(
+        searchParams.get("callbackUrl"),
+        ""
+      )
+    );
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -55,7 +71,7 @@ export default function SignInPage() {
         return;
       }
 
-      router.push("/dashboard");
+      router.push(callbackUrl || "/dashboard");
       router.refresh();
     } catch (error) {
       setError("An unexpected error occurred");
@@ -64,7 +80,7 @@ export default function SignInPage() {
   };
 
   const handleOAuthSignIn = (provider) => {
-    signIn(provider, { callbackUrl: "/dashboard" });
+    signIn(provider, { callbackUrl: callbackUrl || "/dashboard" });
   };
 
   return (
@@ -219,7 +235,10 @@ export default function SignInPage() {
           <div className="mt-8 text-center">
             <p className="text-slate-600">
               Don't have an account?{" "}
-              <a href="/sign-up" className="text-blue-600 hover:text-blue-700 font-semibold">
+              <a
+                href={authRedirect.buildAuthPageHref("/sign-up", callbackUrl)}
+                className="text-blue-600 hover:text-blue-700 font-semibold"
+              >
                 Create one
               </a>
             </p>

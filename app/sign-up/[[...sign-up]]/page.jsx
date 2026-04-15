@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getProviders, signIn } from "next-auth/react";
 import passwordValidation from "../../../utils/passwordValidation";
+import authRedirect from "../../../utils/authRedirect";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [hasGoogleProvider, setHasGoogleProvider] = useState(false);
+  const [callbackUrl, setCallbackUrl] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -39,6 +41,20 @@ export default function SignUpPage() {
     return () => {
       mounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const searchParams = new URLSearchParams(window.location.search);
+    setCallbackUrl(
+      authRedirect.sanitizeRelativeRedirectPath(
+        searchParams.get("callbackUrl"),
+        ""
+      )
+    );
   }, []);
 
   const handleSubmit = async (e) => {
@@ -77,6 +93,7 @@ export default function SignUpPage() {
           name: formData.name,
           email: formData.email,
           password: formData.password,
+          callbackUrl,
         }),
       });
 
@@ -100,14 +117,14 @@ export default function SignUpPage() {
         return;
       }
 
-      if (!data?.verificationToken) {
-        setErrors({ submit: "Verification setup failed. Please try again." });
-        setIsLoading(false);
+      if (callbackUrl) {
+        router.push(callbackUrl);
         return;
       }
 
-      const verificationToken = encodeURIComponent(data.verificationToken);
-      router.push(`/verify?token=${verificationToken}`);
+      router.push(
+        data?.verificationEmailSent ? "/verify?emailSent=1" : "/verify"
+      );
     } catch (error) {
       setErrors({ submit: "An unexpected error occurred" });
       setIsLoading(false);
@@ -115,7 +132,7 @@ export default function SignUpPage() {
   };
 
   const handleOAuthSignIn = (provider) => {
-    signIn(provider, { callbackUrl: "/dashboard" });
+    signIn(provider, { callbackUrl: callbackUrl || "/dashboard" });
   };
 
   return (
@@ -330,7 +347,10 @@ export default function SignUpPage() {
           <div className="mt-8 text-center">
             <p className="text-slate-600">
               Already have an account?{" "}
-              <a href="/sign-in" className="text-blue-600 hover:text-blue-700 font-semibold">
+              <a
+                href={authRedirect.buildAuthPageHref("/sign-in", callbackUrl)}
+                className="text-blue-600 hover:text-blue-700 font-semibold"
+              >
                 Sign in
               </a>
             </p>

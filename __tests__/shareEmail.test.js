@@ -40,4 +40,15 @@ describe("shareEmail", () => {
       html: "<p>Hello</p>",
     });
   });
+
+  test("hasRecentShareEmailRequest returns true inside cooldown window", () => {
+    const now = Date.now();
+
+    expect(
+      shareEmail.hasRecentShareEmailRequest(new Date(now - 30 * 1000), now)
+    ).toBe(true);
+    expect(
+      shareEmail.hasRecentShareEmailRequest(new Date(now - 70 * 1000), now)
+    ).toBe(false);
+  });
 });

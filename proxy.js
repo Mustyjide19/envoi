@@ -1,6 +1,20 @@
 import { auth } from "./auth";
 import { NextResponse } from "next/server";
 
+function sanitizeRelativeRedirectPath(input, fallback = "/dashboard") {
+  if (typeof input !== "string") {
+    return fallback;
+  }
+
+  const trimmed = input.trim();
+
+  if (!trimmed.startsWith("/") || trimmed.startsWith("//")) {
+    return fallback;
+  }
+
+  return trimmed;
+}
+
 export default auth((req) => {
   const isAuth = !!req.auth;
   const pathname = req.nextUrl.pathname;
@@ -14,7 +28,11 @@ export default auth((req) => {
     pathname === "/" || isAuthPage;
 
   if (isAuthPage && isAuth) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+    const callbackUrl = sanitizeRelativeRedirectPath(
+      req.nextUrl.searchParams.get("callbackUrl"),
+      "/dashboard"
+    );
+    return NextResponse.redirect(new URL(callbackUrl, req.url));
   }
 
   if (!isAuth && !isPublicPage) {
@@ -22,7 +40,12 @@ export default auth((req) => {
       return NextResponse.next();
     }
 
-    return NextResponse.redirect(new URL("/sign-in", req.url));
+    const signInUrl = new URL("/sign-in", req.url);
+    signInUrl.searchParams.set(
+      "callbackUrl",
+      `${pathname}${req.nextUrl.search || ""}`
+    );
+    return NextResponse.redirect(signInUrl);
   }
 
   return NextResponse.next();

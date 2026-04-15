@@ -28,4 +28,16 @@ describe("appUrl", () => {
       })
     ).toBe("https://www.envoi.website/abc123");
   });
+
+  test("builds verification URLs with optional returnTo", () => {
+    expect(
+      appUrl.buildVerificationUrl(
+        "verify-token",
+        "https://www.envoi.website",
+        "/shared-files/abc123"
+      )
+    ).toBe(
+      "https://www.envoi.website/verify?token=verify-token&returnTo=%2Fshared-files%2Fabc123"
+    );
+  });
 });

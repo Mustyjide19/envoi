@@ -11,14 +11,26 @@ import {
   Text,
 } from "@react-email/components";
 import appUrl from "../../utils/appUrl";
+import verificationTokenUtils from "../../utils/verificationToken";
 
-export const EmailTemplate = ({ senderName, fileName, fileId }) => {
-  const sharedUrl = appUrl.buildFileViewUrl(fileId, appUrl.getServerAppUrl());
+export const VerificationEmailTemplate = ({
+  userName,
+  verificationToken,
+  returnTo = "",
+}) => {
+  const verificationUrl = appUrl.buildVerificationUrl(
+    verificationToken,
+    appUrl.getServerAppUrl(),
+    returnTo
+  );
+  const expiresInMinutes = Math.round(
+    verificationTokenUtils.VERIFICATION_TOKEN_TTL_MS / 60000
+  );
 
   return (
     <Html>
       <Head />
-      <Preview>Someone shared a file with you on Envoi</Preview>
+      <Preview>Verify your Envoi account</Preview>
       <Body style={main}>
         <Container style={container}>
           <Section style={header}>
@@ -27,35 +39,33 @@ export const EmailTemplate = ({ senderName, fileName, fileId }) => {
           </Section>
 
           <Section style={content}>
-            <Heading style={title}>A file was shared with you</Heading>
+            <Heading style={title}>Verify your account</Heading>
 
             <Text style={paragraph}>
-              {senderName ? `${senderName} shared a file with you on Envoi.` : "A file was shared with you on Envoi."}
+              {userName ? `Hi ${userName},` : "Hi,"}
             </Text>
 
-            <Section style={fileBox}>
-              <Text style={fileLabel}>File name</Text>
-              <Text style={fileName}>{fileName}</Text>
-            </Section>
-
             <Text style={paragraph}>
-              Open the link below to preview or download the file.
+              Thanks for creating your Envoi account. Confirm your email address
+              to unlock secure sharing features and protect your account.
             </Text>
 
             <Section style={buttonContainer}>
-              <Button style={button} href={sharedUrl}>
-                Open Shared File
+              <Button style={button} href={verificationUrl}>
+                Verify Account
               </Button>
             </Section>
 
             <Text style={paragraph}>
-              If you were not expecting this file, you can ignore this email.
+              This link expires in {expiresInMinutes} minutes. If you did not
+              create an Envoi account, you can ignore this email.
             </Text>
 
             <Text style={linkText}>
-              If the button does not work, copy and paste this link into your browser:
+              If the button does not work, copy and paste this link into your
+              browser:
             </Text>
-            <Text style={urlText}>{sharedUrl}</Text>
+            <Text style={urlText}>{verificationUrl}</Text>
           </Section>
         </Container>
       </Body>
@@ -112,29 +122,6 @@ const paragraph = {
   fontSize: "16px",
   lineHeight: "1.6",
   marginBottom: "18px",
-};
-
-const fileBox = {
-  backgroundColor: "#eff6ff",
-  border: "1px solid #bfdbfe",
-  borderRadius: "10px",
-  padding: "18px",
-  marginBottom: "24px",
-};
-
-const fileLabel = {
-  margin: "0 0 4px 0",
-  color: "#1d4ed8",
-  fontSize: "13px",
-  fontWeight: "600",
-  textTransform: "uppercase",
-};
-
-const fileName = {
-  margin: "0",
-  color: "#0f172a",
-  fontSize: "16px",
-  fontWeight: "700",
 };
 
 const buttonContainer = {
