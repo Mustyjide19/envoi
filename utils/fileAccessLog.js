@@ -1,5 +1,6 @@
 import { adminDb } from "../firebaseAdmin";
 
+/* Feature: Activity logging */
 export const FILE_ACTIONS = {
   UPLOAD: "UPLOAD",
   VIEW: "VIEW",

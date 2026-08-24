@@ -1,5 +1,10 @@
 import { adminDb } from "../firebaseAdmin";
 
+/* Feature: Security event logging */
+/* Feature: Denied access logging */
+/* Feature: Failed password attempt logging */
+/* Feature: Expired content access logging */
+/* Feature: Contract-rule violation logging */
 export const SECURITY_EVENT_TYPES = {
   PASSWORD_FAILED: "PASSWORD_FAILED",
   PASSWORD_BLOCKED: "PASSWORD_BLOCKED",

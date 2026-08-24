@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import UserMenu from "../_components/UserMenu";
-import NotificationsBell from "../(dashboard)/_components/NotificationsBell";
+import NotificationsBell from "../_components/(dashboard)/_components/NotificationsBell";
 
 export default function Dashboard() {
   const { data: session, status } = useSession();

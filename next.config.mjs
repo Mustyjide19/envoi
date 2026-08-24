@@ -1,3 +1,4 @@
+/* Feature: Content Security Policy */
 const isDev = process.env.NODE_ENV !== "production";
 
 const cspDirectives = [
@@ -44,6 +45,7 @@ const cspDirectives = [
   ].join(" "),
 ].join("; ");
 
+/* Feature: Security headers */
 const securityHeaders = [
   {
     key: "Content-Security-Policy",

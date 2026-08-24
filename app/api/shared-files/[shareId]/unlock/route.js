@@ -16,6 +16,8 @@ export const runtime = "nodejs";
 
 export async function POST(request, { params }) {
   try {
+    /* Feature: Password-protected sharing */
+    /* Feature: Server-side authorisation checks */
     const session = await auth();
 
     if (!session?.user?.id || !session?.user?.email) {
@@ -39,6 +41,8 @@ export async function POST(request, { params }) {
 
     const share = shareSnap.data();
     const now = Date.now();
+    /* Feature: Share revocation */
+    /* Feature: Denied access logging */
     if (share.revokedAt) {
       await logSecurityEvent({
         eventType: SECURITY_EVENT_TYPES.ACCESS_DENIED,
@@ -56,6 +60,8 @@ export async function POST(request, { params }) {
       );
     }
 
+    /* Feature: Share expiry */
+    /* Feature: Expired content access logging */
     if (shareLinkExpiry.isShareLinkExpired(share.shareExpiresAt, now)) {
       await logSecurityEvent({
         eventType: SECURITY_EVENT_TYPES.SHARED_LINK_EXPIRED_ACCESS,
@@ -91,6 +97,7 @@ export async function POST(request, { params }) {
       );
     }
 
+    /* Feature: Smart Share Contracts */
     const contractAccess = smartShareContract.evaluateContractAccess({
       share,
       actorIsVerified: !!session.user.isVerified,
@@ -99,6 +106,7 @@ export async function POST(request, { params }) {
     });
 
     if (!contractAccess.ok) {
+      /* Feature: Contract-rule violation logging */
       await logSecurityEvent({
         eventType: SECURITY_EVENT_TYPES.CONTRACT_RULE_VIOLATION,
         fileId: share.fileId,
@@ -119,9 +127,11 @@ export async function POST(request, { params }) {
       return NextResponse.json({ ok: true });
     }
 
+    /* Feature: Failed password attempt limiter */
     if (
       passwordAttemptLimiter.isLocked(share.sharePasswordLockedUntil, now)
     ) {
+      /* Feature: Failed password attempt logging */
       await logSecurityEvent({
         eventType: SECURITY_EVENT_TYPES.PASSWORD_BLOCKED,
         fileId: share.fileId,
@@ -146,6 +156,7 @@ export async function POST(request, { params }) {
         sharePasswordLockedUntil: null,
       });
 
+      /* Feature: Activity logging */
       await logFileAction({
         fileId: share.fileId,
         actorUserId: session.user.id,
@@ -178,6 +189,8 @@ export async function POST(request, { params }) {
       sharePasswordLockedUntil: attemptState.lockedUntil,
     });
 
+    /* Feature: Security event logging */
+    /* Feature: Failed password attempt logging */
     await logSecurityEvent({
       eventType: attemptState.blocked
         ? SECURITY_EVENT_TYPES.PASSWORD_BLOCKED

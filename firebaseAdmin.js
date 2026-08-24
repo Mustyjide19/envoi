@@ -19,6 +19,7 @@ function normalizePrivateKey(privateKey) {
   return key.replace(/\\n/g, "\n");
 }
 
+/* Feature: Environment variable handling */
 function getServiceAccountFileConfig() {
   const configuredPath =
     process.env.FIREBASE_SERVICE_ACCOUNT_PATH ||

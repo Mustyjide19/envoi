@@ -2,6 +2,7 @@ function normalizeEmail(email = "") {
   return email.trim().toLowerCase();
 }
 
+/* Feature: Recipient validation */
 function validateDirectShare({
   senderVerified,
   senderEmail,
@@ -45,6 +46,7 @@ function validateDirectShare({
     };
   }
 
+  /* Feature: Prevent sharing with self */
   if (normalizedSenderEmail === normalizedRecipientEmail) {
     return {
       ok: false,

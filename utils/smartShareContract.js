@@ -1,3 +1,4 @@
+/* Feature: Smart Share Contracts */
 const ACTIONS = {
   VIEW: "VIEW",
   DOWNLOAD: "DOWNLOAD",
@@ -46,6 +47,7 @@ function normalizeShareContractInput(input = {}, now = Date.now()) {
 
   let expiresAt = null;
 
+  /* Feature: Contract expiry logic */
   if (expiresAtInput) {
     const parsedDate = new Date(expiresAtInput);
 
@@ -149,6 +151,7 @@ function evaluateContractAccess({
 }) {
   const state = getContractState(share, now);
 
+  /* Feature: Contract expiry logic */
   if (state.expired) {
     return {
       ok: false,
@@ -159,6 +162,7 @@ function evaluateContractAccess({
     };
   }
 
+  /* Feature: Verified-only access rule */
   if (state.verifiedUsersOnly && !actorIsVerified) {
     return {
       ok: false,
@@ -183,6 +187,8 @@ function evaluateContractAccess({
     };
   }
 
+  /* Feature: Limited download rule */
+  /* Feature: View-only rule */
   if (action === ACTIONS.DOWNLOAD) {
     if (!state.allowDownload) {
       return {

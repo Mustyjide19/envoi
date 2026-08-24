@@ -1,0 +1,110 @@
+<svg width="1400" height="900" viewBox="0 0 1400 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="header" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#4338CA"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#EFF6FF"/>
+      <stop offset="100%" stop-color="#EEF2FF"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#0F172A" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0 0L12 6L0 12V0Z" fill="#475569"/>
+    </marker>
+    <style>
+      .title { font: 700 32px Arial, sans-serif; fill: #0F172A; }
+      .subtitle { font: 400 18px Arial, sans-serif; fill: #475569; }
+      .nodeTitle { font: 700 22px Arial, sans-serif; fill: #0F172A; }
+      .nodeText { font: 400 16px Arial, sans-serif; fill: #334155; }
+      .caption { font: 600 16px Arial, sans-serif; fill: #1E293B; }
+      .small { font: 400 14px Arial, sans-serif; fill: #475569; }
+    </style>
+  </defs>
+
+  <rect width="1400" height="900" fill="#F8FAFC"/>
+  <rect x="40" y="32" width="1320" height="836" rx="28" fill="#FFFFFF" filter="url(#shadow)"/>
+
+  <text x="80" y="92" class="title">Envoi High-Level System Architecture</text>
+  <text x="80" y="125" class="subtitle">Secure academic file sharing platform using Next.js, Prisma, Firebase, NextAuth, and Resend</text>
+
+  <rect x="90" y="180" width="230" height="130" rx="22" fill="url(#panel)" stroke="#BFDBFE" stroke-width="2"/>
+  <text x="205" y="225" text-anchor="middle" class="nodeTitle">Users / Students</text>
+  <text x="205" y="255" text-anchor="middle" class="nodeText">Upload files</text>
+  <text x="205" y="280" text-anchor="middle" class="nodeText">Share resources</text>
+  <text x="205" y="305" text-anchor="middle" class="nodeText">Access shared links</text>
+
+  <rect x="390" y="160" width="320" height="170" rx="24" fill="url(#header)"/>
+  <text x="550" y="215" text-anchor="middle" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#FFFFFF">Envoi Web Application</text>
+  <text x="550" y="250" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#DBEAFE">Next.js App Router Frontend</text>
+  <text x="550" y="282" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#DBEAFE">Dashboard, Upload, Preview, Share,</text>
+  <text x="550" y="308" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#DBEAFE">Collections, Notifications, Security Center</text>
+
+  <rect x="790" y="160" width="320" height="170" rx="24" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2"/>
+  <text x="950" y="210" text-anchor="middle" class="nodeTitle">Application Logic</text>
+  <text x="950" y="242" text-anchor="middle" class="nodeText">Next.js API Routes</text>
+  <text x="950" y="270" text-anchor="middle" class="nodeText">Auth, sharing, validation,</text>
+  <text x="950" y="296" text-anchor="middle" class="nodeText">notifications, logging,</text>
+  <text x="950" y="322" text-anchor="middle" class="nodeText">contracts, and security analysis</text>
+
+  <rect x="120" y="410" width="250" height="130" rx="20" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2"/>
+  <text x="245" y="455" text-anchor="middle" class="nodeTitle">Authentication Layer</text>
+  <text x="245" y="485" text-anchor="middle" class="nodeText">NextAuth</text>
+  <text x="245" y="512" text-anchor="middle" class="nodeText">Credentials + Google</text>
+
+  <rect x="430" y="390" width="280" height="170" rx="20" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2"/>
+  <text x="570" y="435" text-anchor="middle" class="nodeTitle">Relational Data Layer</text>
+  <text x="570" y="466" text-anchor="middle" class="nodeText">Prisma + PostgreSQL</text>
+  <text x="570" y="494" text-anchor="middle" class="nodeText">User accounts</text>
+  <text x="570" y="520" text-anchor="middle" class="nodeText">Passwords</text>
+  <text x="570" y="546" text-anchor="middle" class="nodeText">Verification and reset tokens</text>
+
+  <rect x="760" y="390" width="280" height="170" rx="20" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2"/>
+  <text x="900" y="435" text-anchor="middle" class="nodeTitle">Operational Data Layer</text>
+  <text x="900" y="466" text-anchor="middle" class="nodeText">Firebase Firestore</text>
+  <text x="900" y="494" text-anchor="middle" class="nodeText">File metadata, shares, collections,</text>
+  <text x="900" y="520" text-anchor="middle" class="nodeText">notifications, logs,</text>
+  <text x="900" y="546" text-anchor="middle" class="nodeText">security events</text>
+
+  <rect x="1090" y="390" width="220" height="170" rx="20" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2"/>
+  <text x="1200" y="435" text-anchor="middle" class="nodeTitle">File Storage</text>
+  <text x="1200" y="468" text-anchor="middle" class="nodeText">Firebase Storage</text>
+  <text x="1200" y="500" text-anchor="middle" class="nodeText">Uploaded file objects</text>
+  <text x="1200" y="530" text-anchor="middle" class="nodeText">Persistent file access</text>
+
+  <rect x="170" y="640" width="360" height="150" rx="22" fill="#ECFDF5" stroke="#86EFAC" stroke-width="2"/>
+  <text x="350" y="685" text-anchor="middle" class="nodeTitle">Security Enforcement</text>
+  <text x="350" y="715" text-anchor="middle" class="nodeText">Ownership checks</text>
+  <text x="350" y="740" text-anchor="middle" class="nodeText">Verified-user restrictions</text>
+  <text x="350" y="765" text-anchor="middle" class="nodeText">Password, expiry, revocation, contracts</text>
+
+  <rect x="600" y="640" width="300" height="150" rx="22" fill="#FFF7ED" stroke="#FDBA74" stroke-width="2"/>
+  <text x="750" y="685" text-anchor="middle" class="nodeTitle">Communication Services</text>
+  <text x="750" y="715" text-anchor="middle" class="nodeText">Resend</text>
+  <text x="750" y="740" text-anchor="middle" class="nodeText">Share emails</text>
+  <text x="750" y="765" text-anchor="middle" class="nodeText">Verification and reset emails</text>
+
+  <rect x="970" y="640" width="270" height="150" rx="22" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="2"/>
+  <text x="1105" y="685" text-anchor="middle" class="nodeTitle">Security Center</text>
+  <text x="1105" y="715" text-anchor="middle" class="nodeText">Risk score and badge</text>
+  <text x="1105" y="740" text-anchor="middle" class="nodeText">Alerts and activity timeline</text>
+  <text x="1105" y="765" text-anchor="middle" class="nodeText">Owner response actions</text>
+
+  <line x1="320" y1="245" x2="390" y2="245" stroke="#475569" stroke-width="4" marker-end="url(#arrow)"/>
+  <line x1="710" y1="245" x2="790" y2="245" stroke="#475569" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <line x1="950" y1="330" x2="950" y2="390" stroke="#475569" stroke-width="4" marker-end="url(#arrow)"/>
+  <line x1="850" y1="330" x2="570" y2="390" stroke="#475569" stroke-width="4" marker-end="url(#arrow)"/>
+  <line x1="810" y1="330" x2="245" y2="410" stroke="#475569" stroke-width="4" marker-end="url(#arrow)"/>
+  <line x1="1030" y1="330" x2="1200" y2="390" stroke="#475569" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <line x1="245" y1="540" x2="350" y2="640" stroke="#475569" stroke-width="4" marker-end="url(#arrow)"/>
+  <line x1="900" y1="560" x2="1105" y2="640" stroke="#475569" stroke-width="4" marker-end="url(#arrow)"/>
+  <line x1="950" y1="560" x2="750" y2="640" stroke="#475569" stroke-width="4" marker-end="url(#arrow)"/>
+  <line x1="570" y1="560" x2="350" y2="640" stroke="#475569" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <text x="80" y="845" class="caption">Figure 1: High-level system architecture of Envoi.</text>
+  <text x="80" y="870" class="small">The diagram shows how the frontend, backend logic, authentication, storage, database services, email delivery, and security monitoring components interact to support secure academic file sharing.</text>
+</svg>

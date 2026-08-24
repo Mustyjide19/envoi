@@ -28,16 +28,21 @@ function getFileExtension(fileName = "") {
   return fileName.slice(lastDot + 1).toLowerCase();
 }
 
+/* Feature: Multi-format file preview */
 function detectPreviewType(file) {
   const fileType = file?.fileType || "";
   const extension = getFileExtension(file?.fileName);
 
+  /* Feature: Image preview */
   if (fileType.startsWith("image/")) return "image";
+  /* Feature: PDF preview */
   if (fileType === "application/pdf" || extension === "pdf") return "pdf";
+  /* Feature: Audio/video preview */
   if (fileType.startsWith("video/") || VIDEO_EXTENSIONS.has(extension)) return "video";
   if (fileType.startsWith("audio/") || AUDIO_EXTENSIONS.has(extension)) return "audio";
   if (DOCX_EXTENSIONS.has(extension)) return "docx";
 
+  /* Feature: Code/text preview */
   if (
     fileType.startsWith("text/") ||
     fileType === "application/json" ||
@@ -138,6 +143,7 @@ export default function FileContentPreview({ file, className = "" }) {
     );
   }
 
+  /* Feature: Image preview */
   if (previewType === "image") {
     return (
       <img
@@ -148,6 +154,7 @@ export default function FileContentPreview({ file, className = "" }) {
     );
   }
 
+  /* Feature: PDF preview */
   if (previewType === "pdf") {
     return (
       <iframe
@@ -158,6 +165,7 @@ export default function FileContentPreview({ file, className = "" }) {
     );
   }
 
+  /* Feature: Audio/video preview */
   if (previewType === "video") {
     return (
       <video
@@ -171,6 +179,7 @@ export default function FileContentPreview({ file, className = "" }) {
     );
   }
 
+  /* Feature: Audio/video preview */
   if (previewType === "audio") {
     return (
       <div className="flex min-h-64 w-full items-center justify-center rounded-lg border border-gray-200 bg-gray-50 p-6">
@@ -182,6 +191,7 @@ export default function FileContentPreview({ file, className = "" }) {
     );
   }
 
+  /* Feature: Code/text preview */
   if (previewType === "text") {
     if (isLoadingText) {
       return (

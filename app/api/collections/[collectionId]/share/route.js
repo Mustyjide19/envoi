@@ -36,6 +36,8 @@ function getCollectionShareValidationMessage(code, fallbackMessage) {
 
 export async function POST(request, context) {
   try {
+    /* Feature: Collection sharing */
+    /* Feature: Server-side authorisation checks */
     const session = await auth();
 
     if (!session?.user?.email || !session?.user?.id) {
@@ -81,6 +83,7 @@ export async function POST(request, context) {
       id: collectionSnap.id,
       ...collectionSnap.data(),
     };
+    /* Feature: Recipient validation */
     const validation = directShareValidation.validateDirectShare({
       senderVerified: !!sender?.isVerified,
       senderEmail: sender?.email || "",
@@ -117,6 +120,7 @@ export async function POST(request, context) {
       recipient,
     });
 
+    /* Feature: Collection notifications */
     await createCollectionShareNotification({
       recipientUserId: recipient.id,
       recipientEmail: recipient.email,

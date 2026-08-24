@@ -1,5 +1,6 @@
 import { adminDb } from "../firebaseAdmin";
 
+/* Feature: Share notifications */
 const NOTIFICATION_TYPES = {
   SHARE_RECEIVED: "SHARE_RECEIVED",
   COLLECTION_SHARE_RECEIVED: "COLLECTION_SHARE_RECEIVED",
@@ -43,6 +44,7 @@ async function createShareNotification({
   });
 }
 
+/* Feature: Collection notifications */
 async function createCollectionShareNotification({
   recipientUserId,
   recipientEmail,

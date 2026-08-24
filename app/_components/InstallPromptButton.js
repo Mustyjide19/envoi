@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+/* Feature: PWA support */
+/* Feature: Install prompt */
 function InstallPromptButton() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstalled, setIsInstalled] = useState(false);

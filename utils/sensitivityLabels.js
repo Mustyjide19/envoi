@@ -1,3 +1,4 @@
+/* Feature: Sensitivity labels */
 const SENSITIVITY_LABELS = ["Academic", "Private", "Sensitive"];
 
 function normalizeSensitivityLabel(value = "") {

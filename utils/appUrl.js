@@ -1,3 +1,4 @@
+/* Feature: App URL handling */
 const LOCAL_APP_URL = "http://localhost:3000";
 
 function normalizeAppUrl(value) {
@@ -14,6 +15,7 @@ function normalizeAppUrl(value) {
   return trimmed.replace(/\/+$/, "");
 }
 
+/* Feature: Environment variable handling */
 function getServerAppUrl(env = process.env) {
   return (
     normalizeAppUrl(env?.NEXT_PUBLIC_APP_URL) ||
@@ -71,6 +73,7 @@ function buildVerificationUrl(token, baseUrl, returnTo = "") {
   return url.toString();
 }
 
+/* Feature: Production sharing link handling */
 function resolveDisplayedShortUrl({
   storedUrl,
   fileId,

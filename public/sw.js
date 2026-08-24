@@ -1,3 +1,5 @@
+/* Feature: PWA support */
+/* Feature: Service worker */
 const CACHE_NAME = "envoi-static-v2";
 const STATIC_ASSETS = [
   "/favicon.ico",

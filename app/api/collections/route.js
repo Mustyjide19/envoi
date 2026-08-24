@@ -42,6 +42,8 @@ async function getOwnerCollections(session) {
 
 export async function GET() {
   try {
+    /* Feature: File collections */
+    /* Feature: Server-side authorisation checks */
     const session = await auth();
 
     if (!session?.user?.email || !session?.user?.id) {
@@ -65,6 +67,8 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    /* Feature: File collections */
+    /* Feature: Server-side authorisation checks */
     const session = await auth();
 
     if (!session?.user?.email || !session?.user?.id) {

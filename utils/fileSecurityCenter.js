@@ -1,5 +1,6 @@
 const smartShareContract = require("./smartShareContract");
 
+/* Feature: Security Centre */
 const RISK_STATUS = {
   SAFE: "SAFE",
   WARNING: "WARNING",
@@ -134,6 +135,7 @@ function evaluateFileSecurityCenter({
   shares = [],
   now = Date.now(),
 }) {
+  /* Feature: Active shares visibility */
   const directShares = shares.filter((share) => !share.collectionShareId);
   const collectionShares = shares.filter((share) => !!share.collectionShareId);
   const activeDirectShares = directShares.filter((share) => !share.revokedAt);
@@ -277,6 +279,7 @@ function evaluateFileSecurityCenter({
     );
   }
 
+  /* Feature: Risk scoring */
   let score = 72;
 
   if (file.password) score += 12;

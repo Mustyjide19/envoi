@@ -20,6 +20,7 @@ function sortNewestFirst(items, fieldName) {
 
 export async function GET(request) {
   try {
+    /* Feature: Server-side authorisation checks */
     const session = await auth();
 
     if (!session?.user?.email || !session?.user?.id) {
@@ -166,6 +167,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    /* Feature: Server-side authorisation checks */
     const session = await auth();
 
     if (!session?.user?.email) {
@@ -196,6 +198,7 @@ export async function POST(request) {
       );
     }
 
+    /* Feature: Sensitivity labels */
     const normalizedSensitivityLabel =
       sensitivityLabels.normalizeSensitivityLabel(sensitivityLabel);
 
@@ -206,6 +209,7 @@ export async function POST(request) {
       );
     }
 
+    /* Feature: Firestore file metadata storage */
     await adminDb.collection("uploadedFiles").doc(id).set({
       id,
       fileName,
@@ -228,6 +232,7 @@ export async function POST(request) {
       shortUrl: shortUrl || appUrl.buildShortUrl(id, appUrl.getServerAppUrl()),
     });
 
+    /* Feature: Activity logging */
     await logFileAction({
       fileId: id,
       actorUserId: session.user.id,

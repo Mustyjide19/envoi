@@ -12,6 +12,7 @@ export const runtime = "nodejs";
 
 export async function GET(request, context) {
   try {
+    /* Feature: Shared file access */
     const { fileId } = await context.params;
     const fileSnap = await adminDb.collection("uploadedFiles").doc(fileId).get();
 
@@ -23,6 +24,8 @@ export async function GET(request, context) {
     }
 
     const file = fileSnap.data();
+    /* Feature: Share expiry */
+    /* Feature: Expired content access logging */
     if (shareLinkExpiry.isShareLinkExpired(file.linkExpiresAt)) {
       await logSecurityEvent({
         eventType: SECURITY_EVENT_TYPES.PUBLIC_LINK_EXPIRED_ACCESS,
@@ -41,6 +44,7 @@ export async function GET(request, context) {
       )?.value === "1";
 
     if (isUnlocked) {
+      /* Feature: Activity logging */
       await logFileAction({
         fileId,
         actorUserId: null,

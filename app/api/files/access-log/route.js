@@ -40,6 +40,8 @@ async function logShareSecurityEvent({
 
 export async function POST(request) {
   try {
+    /* Feature: Shared file access */
+    /* Feature: Server-side authorisation checks */
     const session = await auth();
 
     if (!session?.user?.email) {
@@ -186,6 +188,9 @@ export async function POST(request) {
           break;
         }
 
+        /* Feature: Limited download rule */
+        /* Feature: View-only rule */
+        /* Feature: Smart Share Contracts */
         const contractAccess = smartShareContract.evaluateContractAccess({
           share,
           actorIsVerified: !!session.user.isVerified,
@@ -209,6 +214,7 @@ export async function POST(request) {
         });
 
         if (!contractAccess.ok) {
+          /* Feature: Contract-rule violation logging */
           await logShareSecurityEvent({
             eventType: SECURITY_EVENT_TYPES.CONTRACT_RULE_VIOLATION,
             share: requestedShare,
@@ -317,6 +323,7 @@ export async function POST(request) {
       }
     }
 
+    /* Feature: Activity logging */
     await logFileAction({
       fileId,
       actorUserId: session.user.id,

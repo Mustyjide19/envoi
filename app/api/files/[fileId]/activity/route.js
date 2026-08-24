@@ -6,6 +6,8 @@ export const runtime = "nodejs";
 
 export async function GET(request, context) {
   try {
+    /* Feature: File activity panel */
+    /* Feature: Server-side authorisation checks */
     const session = await auth();
 
     if (!session?.user?.email) {

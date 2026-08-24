@@ -1,5 +1,8 @@
+/* Feature: File upload validation */
 const MAX_FILE_SIZE = 30 * 1024 * 1024;
 
+/* Feature: File extension validation */
+/* Feature: Academic file type support */
 const ALLOWED_EXTENSIONS = new Set([
   ".pdf",
   ".doc",
@@ -43,6 +46,7 @@ const DISPLAYED_ALLOWED_EXTENSIONS = [
   ".pcap",
 ];
 
+/* Feature: MIME type validation */
 const ALLOWED_MIME_BY_EXTENSION = {
   ".pdf": new Set(["application/pdf"]),
   ".doc": new Set(["application/msword"]),
@@ -71,6 +75,7 @@ const ALLOWED_MIME_BY_EXTENSION = {
   ".sql": new Set(["text/plain", "application/sql"]),
 };
 
+/* Feature: Blocked executable files */
 const SUSPICIOUS_EXTENSIONS = new Set([
   ".exe",
   ".dll",
@@ -85,6 +90,7 @@ const SUSPICIOUS_EXTENSIONS = new Set([
   ".vbs",
 ]);
 
+/* Feature: Suspicious file detection */
 const SUSPICIOUS_MIME_TYPES = new Set([
   "application/x-msdownload",
   "application/x-dosexec",
@@ -108,6 +114,7 @@ function validateUploadFile(file) {
     return fail("INVALID_FILE", "No file selected.");
   }
 
+  /* Feature: File size validation */
   if (typeof file.size === "number" && file.size > MAX_FILE_SIZE) {
     return fail("FILE_TOO_LARGE", "File size exceeds the 30MB limit.");
   }
@@ -119,14 +126,17 @@ function validateUploadFile(file) {
     return fail("MISSING_EXTENSION", "File must include a valid extension.");
   }
 
+  /* Feature: Suspicious file detection */
   if (SUSPICIOUS_EXTENSIONS.has(extension) || SUSPICIOUS_MIME_TYPES.has(mimeType)) {
     return fail("SUSPICIOUS_FILE", "Executable or suspicious files are not allowed.");
   }
 
+  /* Feature: File extension validation */
   if (!ALLOWED_EXTENSIONS.has(extension)) {
     return fail("INVALID_EXTENSION", "This file extension is not allowed.");
   }
 
+  /* Feature: Cybersecurity file type support */
   // Packet captures often come through as octet-stream or vendor-specific values.
   if (extension === ".pcap") {
     if (!mimeType || mimeType === "application/octet-stream" || mimeType === "application/vnd.tcpdump.pcap" || mimeType === "application/x-pcap") {
@@ -134,6 +144,7 @@ function validateUploadFile(file) {
     }
   }
 
+  /* Feature: MIME type validation */
   const allowedMimeTypes = ALLOWED_MIME_BY_EXTENSION[extension];
   if (!mimeType || !allowedMimeTypes || !allowedMimeTypes.has(mimeType)) {
     return fail("INVALID_MIME", "This file type is not allowed.");

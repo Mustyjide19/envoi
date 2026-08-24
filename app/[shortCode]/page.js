@@ -4,6 +4,7 @@ import { adminDb } from "../../firebaseAdmin";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/* Feature: Short-link sharing */
 export default async function ShortLinkPage({ params }) {
   const { shortCode } = await params;
   const normalizedShortCode =

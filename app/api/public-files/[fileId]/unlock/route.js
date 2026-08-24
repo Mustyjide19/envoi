@@ -13,6 +13,7 @@ export const runtime = "nodejs";
 
 export async function POST(request, context) {
   try {
+    /* Feature: Password-protected sharing */
     const { fileId } = await context.params;
     const body = await request.json();
     const password = typeof body?.password === "string" ? body.password : "";
@@ -30,6 +31,8 @@ export async function POST(request, context) {
     const file = fileSnap.data();
     const now = Date.now();
 
+    /* Feature: Share expiry */
+    /* Feature: Expired content access logging */
     if (shareLinkExpiry.isShareLinkExpired(file.linkExpiresAt, now)) {
       await logSecurityEvent({
         eventType: SECURITY_EVENT_TYPES.PUBLIC_LINK_EXPIRED_ACCESS,
@@ -45,7 +48,9 @@ export async function POST(request, context) {
       return NextResponse.json({ ok: true });
     }
 
+    /* Feature: Failed password attempt limiter */
     if (passwordAttemptLimiter.isLocked(file.passwordLockedUntil, now)) {
+      /* Feature: Failed password attempt logging */
       await logSecurityEvent({
         eventType: SECURITY_EVENT_TYPES.PASSWORD_BLOCKED,
         fileId,
@@ -59,6 +64,7 @@ export async function POST(request, context) {
     if (password === file.password) {
       await fileRef.update(passwordAttemptLimiter.getSuccessfulAttemptReset());
 
+      /* Feature: Activity logging */
       await logFileAction({
         fileId,
         actorUserId: null,
@@ -94,6 +100,8 @@ export async function POST(request, context) {
       passwordLockedUntil: attemptState.lockedUntil,
     });
 
+    /* Feature: Security event logging */
+    /* Feature: Failed password attempt logging */
     await logSecurityEvent({
       eventType: attemptState.blocked
         ? SECURITY_EVENT_TYPES.PASSWORD_BLOCKED

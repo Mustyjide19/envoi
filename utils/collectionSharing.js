@@ -1,5 +1,6 @@
 import { adminDb } from "../firebaseAdmin";
 
+/* Feature: Collection sharing */
 function buildCollectionShareId(collectionId, recipientUserId) {
   return `collection_${collectionId}_${recipientUserId}`;
 }
@@ -29,6 +30,7 @@ async function getFilesByIds(fileIds) {
   return fileMap;
 }
 
+/* Feature: File collections */
 async function getOwnedCollectionFiles({ ownerEmail, orderedItems }) {
   const fileMap = await getFilesByIds(
     orderedItems.map((item) => item.fileId).filter(Boolean)

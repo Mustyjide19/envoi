@@ -38,6 +38,8 @@ async function logContractViolation({ share, shareId, session, result }) {
 
 export async function GET(request, { params }) {
   try {
+    /* Feature: Shared file access */
+    /* Feature: Server-side authorisation checks */
     const session = await auth();
 
     if (!session?.user?.id || !session?.user?.email) {
@@ -58,6 +60,9 @@ export async function GET(request, { params }) {
     }
 
     const shareData = shareSnap.data();
+    /* Feature: Share revocation */
+    /* Feature: Security event logging */
+    /* Feature: Denied access logging */
     if (shareData.revokedAt) {
       await logSecurityEvent({
         eventType: SECURITY_EVENT_TYPES.ACCESS_DENIED,
@@ -75,6 +80,8 @@ export async function GET(request, { params }) {
       );
     }
 
+    /* Feature: Share expiry */
+    /* Feature: Expired content access logging */
     if (shareLinkExpiry.isShareLinkExpired(shareData.shareExpiresAt)) {
       await logSecurityEvent({
         eventType: SECURITY_EVENT_TYPES.SHARED_LINK_EXPIRED_ACCESS,
@@ -89,6 +96,7 @@ export async function GET(request, { params }) {
       );
     }
 
+    /* Feature: Server-side authorisation checks */
     const recipientMatches =
       shareData.recipientUserId === session.user.id ||
       shareData.recipientEmail === session.user.email;
@@ -110,6 +118,8 @@ export async function GET(request, { params }) {
       );
     }
 
+    /* Feature: Smart Share Contracts */
+    /* Feature: Verified-only access rule */
     const contractAccess = smartShareContract.evaluateContractAccess({
       share: shareData,
       actorIsVerified: !!session.user.isVerified,
@@ -117,6 +127,7 @@ export async function GET(request, { params }) {
     });
 
     if (!contractAccess.ok) {
+      /* Feature: Contract-rule violation logging */
       await logContractViolation({
         share: shareData,
         shareId,
@@ -202,6 +213,7 @@ export async function GET(request, { params }) {
         throw error;
       }
 
+      /* Feature: Activity logging */
       await logFileAction({
         fileId: resolvedShare.fileId,
         actorUserId: session.user.id,

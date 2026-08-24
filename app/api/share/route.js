@@ -14,6 +14,8 @@ export const runtime = "nodejs";
 
 export async function POST(request) {
   try {
+    /* Feature: Direct file sharing */
+    /* Feature: Server-side authorisation checks */
     const session = await auth();
 
     if (!session?.user?.email || !session?.user?.id) {
@@ -65,6 +67,8 @@ export async function POST(request) {
     const shareId = `${fileId}_${recipient?.id || "missing"}`;
     const existingShareSnapshot = await adminDb.collection("sharedFiles").doc(shareId).get();
 
+    /* Feature: Recipient validation */
+    /* Feature: Prevent sharing with self */
     const validation = directShareValidation.validateDirectShare({
       senderVerified: !!sender?.isVerified,
       senderEmail: sender?.email || "",
@@ -90,6 +94,8 @@ export async function POST(request) {
     }
 
     const sharedAt = new Date().toISOString();
+    /* Feature: Share expiry */
+    /* Feature: Smart Share Contracts */
     const resolvedExpiry = shareLinkExpiry.resolveShareLinkExpiry(
       typeof shareExpiryOption === "string" ? shareExpiryOption : ""
     );
@@ -114,6 +120,7 @@ export async function POST(request) {
       );
     }
 
+    /* Feature: Password-protected sharing */
     const normalizedSharePassword =
       typeof sharePassword === "string" ? sharePassword.trim() : "";
     const sharePasswordHash = normalizedSharePassword
@@ -154,6 +161,7 @@ export async function POST(request) {
       updatedAt: sharedAt,
     }, { merge: true });
 
+    /* Feature: Activity logging */
     await logFileAction({
       fileId,
       actorUserId: session.user.id,
@@ -170,6 +178,7 @@ export async function POST(request) {
       },
     });
 
+    /* Feature: Share notifications */
     await createShareNotification({
       recipientUserId: recipient.id,
       recipientEmail: recipient.email,

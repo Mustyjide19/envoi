@@ -6,6 +6,7 @@ import { FILE_ACTIONS, logFileAction } from "../../../../../../utils/fileAccessL
 export const runtime = "nodejs";
 
 async function getOwnedFile(session, fileId) {
+  /* Feature: Server-side authorisation checks */
   const fileSnap = await adminDb.collection("uploadedFiles").doc(fileId).get();
 
   if (!fileSnap.exists) {
@@ -43,6 +44,7 @@ async function getDirectShare(fileId, shareId) {
 
 export async function PATCH(request, context) {
   try {
+    /* Feature: Share expiry */
     const session = await auth();
 
     if (!session?.user?.email || !session?.user?.id) {
@@ -88,6 +90,7 @@ export async function PATCH(request, context) {
       updatedAt: nowIso,
     });
 
+    /* Feature: Activity logging */
     await logFileAction({
       fileId,
       actorUserId: session.user.id,
@@ -112,6 +115,7 @@ export async function PATCH(request, context) {
 
 export async function DELETE(request, context) {
   try {
+    /* Feature: Share revocation */
     const session = await auth();
 
     if (!session?.user?.email || !session?.user?.id) {
@@ -149,6 +153,7 @@ export async function DELETE(request, context) {
       updatedAt: nowIso,
     });
 
+    /* Feature: Activity logging */
     await logFileAction({
       fileId,
       actorUserId: session.user.id,

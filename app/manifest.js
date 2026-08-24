@@ -1,3 +1,5 @@
+/* Feature: PWA support */
+/* Feature: Web app manifest */
 export default function manifest() {
   return {
     name: "Envoi",
