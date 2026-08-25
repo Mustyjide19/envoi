@@ -3,7 +3,7 @@
 import { useState } from "react";
 import SideNav from "./_components/SideNav";
 import TopHeader from "./_components/TopHeader";
-import InactivityLogout from "../InactivityLogout";
+import InactivityLogout from "../_components/InactivityLogout";
 
 export default function Layout({ children }) {
   const [open, setOpen] = useState(false);

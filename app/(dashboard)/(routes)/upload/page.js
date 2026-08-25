@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import UploadForm from "./_components/UploadForm";
-import { app } from "../../../../../firebaseConfig";
+import { app } from "../../../../firebaseConfig";
 import { useRouter } from "next/navigation";
 import {
   getStorage,
@@ -10,10 +10,10 @@ import {
   uploadBytesResumable,
   getDownloadURL,
 } from "firebase/storage";
-import { generateRandomString } from "../../../../_utils/GenerateRandomString";
-import fileValidation from "../../../../../utils/fileValidation";
-import sensitivityLabels from "../../../../../utils/sensitivityLabels";
-import appUrl from "../../../../../utils/appUrl";
+import { generateRandomString } from "../../../_utils/GenerateRandomString";
+import fileValidation from "../../../../utils/fileValidation";
+import sensitivityLabels from "../../../../utils/sensitivityLabels";
+import appUrl from "../../../../utils/appUrl";
 
 function Upload() {
   const { status } = useSession();

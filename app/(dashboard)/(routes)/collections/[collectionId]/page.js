@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import UserAvatar from "../../../../UserAvatar";
+import UserAvatar from "../../../../_components/UserAvatar";
 import CollectionSharePanel from "../_components/CollectionSharePanel";
 
 function formatTimestamp(timestamp) {

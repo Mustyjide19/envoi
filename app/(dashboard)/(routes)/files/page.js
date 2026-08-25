@@ -4,8 +4,8 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { getStorage, ref, deleteObject } from "firebase/storage";
-import { app } from "../../../../../firebaseConfig";
-import UserAvatar from "../../../UserAvatar";
+import { app } from "../../../../firebaseConfig";
+import UserAvatar from "../../../_components/UserAvatar";
 
 function normalizeText(value) {
   return String(value || "").trim().toLowerCase();

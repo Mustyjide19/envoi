@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import { AlignJustify } from "lucide-react";
 import Image from "next/image";
-import UserMenu from "../../UserMenu";
+import UserMenu from "../../_components/UserMenu";
 import NotificationsBell from "./NotificationsBell";
 
 function TopHeader({ onMenuClick }) {

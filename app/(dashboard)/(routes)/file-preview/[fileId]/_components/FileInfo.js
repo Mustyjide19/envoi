@@ -1,5 +1,5 @@
 import React from 'react';
-import FileContentPreview from "../../../../../FileContentPreview";
+import FileContentPreview from "../../../../../_components/FileContentPreview";
 
 function FileInfo({ file, error = "" }) {
   if (error && !file) {

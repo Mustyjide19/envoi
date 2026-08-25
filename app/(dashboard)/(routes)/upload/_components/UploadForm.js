@@ -3,8 +3,8 @@ import React, { useRef, useState } from 'react';
 import { useSession } from "next-auth/react";
 import AlertMessage from './AlertMessage';
 import FilePreview from './FilePreview';
-import fileValidation from '../../../../../../utils/fileValidation';
-import sensitivityLabels from '../../../../../../utils/sensitivityLabels';
+import fileValidation from '../../../../../utils/fileValidation';
+import sensitivityLabels from '../../../../../utils/sensitivityLabels';
 
 function UploadForm({ uploadFile }) {
   const { data: session, status } = useSession();
