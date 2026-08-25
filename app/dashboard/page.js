@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import UserMenu from "../_components/UserMenu";
 import NotificationsBell from "../_components/(dashboard)/_components/NotificationsBell";
+import AriaAssistant from "../_components/AriaAssistant";
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -115,6 +116,7 @@ export default function Dashboard() {
           </button>
           
           <div className="flex items-center gap-3">
+            <AriaAssistant />
             <NotificationsBell />
             <UserMenu user={session.user} />
           </div>
