@@ -19,6 +19,7 @@ function createFirestoreConversationStore(adminDb, options = {}) {
       userId: conversationData.userId,
       userName: conversationData.userName,
       title: conversationData.title,
+      pendingAction: conversationData.pendingAction || null,
       createdAt: conversationData.createdAt,
       updatedAt: conversationData.updatedAt,
       messages: messageDocs.map((doc) => {
@@ -27,6 +28,9 @@ function createFirestoreConversationStore(adminDb, options = {}) {
           id: doc.id,
           role: data.role,
           content: data.content,
+          kind: data.kind || "text",
+          toolName: data.toolName || null,
+          quickActions: Array.isArray(data.quickActions) ? data.quickActions : [],
           createdAt: data.createdAt,
           _persisted: true,
         };
@@ -80,6 +84,7 @@ function createFirestoreConversationStore(adminDb, options = {}) {
           userId: conversation.userId,
           userName: conversation.userName || null,
           title: conversation.title || null,
+          pendingAction: conversation.pendingAction || null,
           createdAt: conversation.createdAt,
           updatedAt: conversation.updatedAt,
         },
@@ -96,6 +101,9 @@ function createFirestoreConversationStore(adminDb, options = {}) {
         conversationId,
         role: message.role,
         content: message.content,
+        kind: message.kind || "text",
+        toolName: message.toolName || null,
+        quickActions: Array.isArray(message.quickActions) ? message.quickActions : [],
         createdAt: message.createdAt,
       });
       message.id = messageRef.id;

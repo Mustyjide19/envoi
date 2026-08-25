@@ -87,6 +87,21 @@ function Upload() {
     );
   };
 
+  /* Feature: ARIA proactive context events (best-effort, never blocks upload) */
+  const notifyAria = async (type, payload) => {
+    try {
+      await fetch("/api/aria/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, payload }),
+      });
+      window.dispatchEvent(new CustomEvent("aria:refresh"));
+    } catch {
+      // ARIA is a proactive nice-to-have here — a failure to notify her
+      // must never surface as an upload error.
+    }
+  };
+
   /* Feature: Firestore file metadata storage */
   const saveInfo = async (
     fileName,
@@ -132,6 +147,24 @@ function Upload() {
 
       setFileDocId(data.id || docId);
       setUploadCompleted(true);
+
+      // Awaited sequentially, not fired in parallel: two concurrent
+      // "no conversation yet" reads for a brand-new user would otherwise
+      // each create their own conversation and silently strand one
+      // message in an orphaned thread the UI never loads.
+      await notifyAria("file_uploaded", {
+        fileId: data.id || docId,
+        fileName,
+        fileType: file.type,
+        fileSize: file.size,
+      });
+
+      if (sensitivityLabel === "Sensitive") {
+        await notifyAria("file_tagged_sensitive", {
+          fileId: data.id || docId,
+          fileName,
+        });
+      }
     } catch (error) {
       console.error("Error saving file metadata:", error);
     }

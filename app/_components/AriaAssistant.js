@@ -1,7 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronUp, Mic, Send, Sparkles, Trash2, Minus, X } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronUp,
+  Mic,
+  Search,
+  Send,
+  Sparkles,
+  Trash2,
+  Minus,
+  X,
+} from "lucide-react";
 
 const STORAGE_OPEN_KEY = "envoi-aria-open";
 const STORAGE_MINIMIZED_KEY = "envoi-aria-minimized";
@@ -12,6 +23,13 @@ function formatTime(value) {
   if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
+
+const MESSAGE_KIND_ICON = {
+  tool_result: Search,
+  proactive: Sparkles,
+  action_result: CheckCircle2,
+  error: AlertTriangle,
+};
 
 /* Feature: ARIA assistant (native Envoi chat widget) */
 function AriaAssistant() {
@@ -31,6 +49,8 @@ function AriaAssistant() {
   const [quickActions, setQuickActions] = useState([]);
   const [conversationId, setConversationId] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [pendingAction, setPendingAction] = useState(null);
+  const [isResolvingAction, setIsResolvingAction] = useState(false);
   const [input, setInput] = useState("");
 
   const scrollRef = useRef(null);
@@ -86,6 +106,7 @@ function AriaAssistant() {
         if (data.conversation) {
           setConversationId(data.conversation.id);
           setMessages(data.conversation.messages || []);
+          setPendingAction(data.conversation.pendingAction || null);
         }
       } catch {
         if (!ignore) setError("ARIA is unavailable right now.");
@@ -103,6 +124,35 @@ function AriaAssistant() {
       ignore = true;
     };
   }, [open, hasLoadedHistory]);
+
+  // Lets the rest of the app (e.g. after a successful upload) tell an
+  // already-open ARIA panel to pick up a new proactive message without
+  // polling — see app/(dashboard)/(routes)/upload/page.js.
+  useEffect(() => {
+    function handleExternalRefresh() {
+      if (!open) return;
+      void refreshConversation();
+    }
+
+    window.addEventListener("aria:refresh", handleExternalRefresh);
+    return () => window.removeEventListener("aria:refresh", handleExternalRefresh);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  async function refreshConversation() {
+    try {
+      const response = await fetch("/api/aria", { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok || !data.conversation) return;
+
+      setConversationId(data.conversation.id);
+      setMessages(data.conversation.messages || []);
+      setPendingAction(data.conversation.pendingAction || null);
+    } catch {
+      // Best-effort refresh — a failure here just means the proactive
+      // message will show next time the panel is opened/reloaded instead.
+    }
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -152,16 +202,50 @@ function AriaAssistant() {
         if (data?.conversation) {
           setConversationId(data.conversation.id);
           setMessages(data.conversation.messages || []);
+          setPendingAction(data.conversation.pendingAction || null);
         }
         return;
       }
 
       setConversationId(data.conversation.id);
       setMessages(data.conversation.messages || []);
+      setPendingAction(data.conversation.pendingAction || null);
     } catch {
       setError("ARIA is unavailable right now. Please try again.");
     } finally {
       setIsSending(false);
+    }
+  }
+
+  async function resolvePendingAction(kind) {
+    if (isResolvingAction || !conversationId || !pendingAction) return;
+
+    setIsResolvingAction(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/aria", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conversationId,
+          [kind === "confirm" ? "confirmAction" : "cancelAction"]: true,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data?.error || "ARIA hit a problem. Please try again.");
+        return;
+      }
+
+      setMessages(data.conversation.messages || []);
+      setPendingAction(data.conversation.pendingAction || null);
+    } catch {
+      setError("ARIA is unavailable right now. Please try again.");
+    } finally {
+      setIsResolvingAction(false);
     }
   }
 
@@ -210,6 +294,7 @@ function AriaAssistant() {
 
       setConversationId(null);
       setMessages([]);
+      setPendingAction(null);
     } catch {
       setError("Unable to clear this conversation. Please try again.");
     } finally {
@@ -315,29 +400,56 @@ function AriaAssistant() {
                 </p>
               </div>
             ) : (
-              messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                >
+              messages.map((message) => {
+                const KindIcon = MESSAGE_KIND_ICON[message.kind];
+                return (
                   <div
-                    className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
-                      message.role === "user"
-                        ? "app-accent-btn"
-                        : "app-surface-muted app-text border"
-                    }`}
+                    key={message.id}
+                    className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                   >
-                    <p className="whitespace-pre-wrap">{message.content}</p>
-                    <p
-                      className={`mt-1 text-[10px] ${
-                        message.role === "user" ? "text-white/70" : "app-text-muted"
+                    <div
+                      className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
+                        message.role === "user"
+                          ? "app-accent-btn"
+                          : message.kind === "error"
+                            ? "border border-red-200 bg-red-50 text-red-800"
+                            : "app-surface-muted app-text border"
                       }`}
                     >
-                      {formatTime(message.createdAt)}
-                    </p>
+                      {KindIcon && (
+                        <KindIcon
+                          className={`mb-1 h-3.5 w-3.5 ${
+                            message.kind === "error" ? "text-red-600" : "app-accent-text"
+                          }`}
+                        />
+                      )}
+                      <p className="whitespace-pre-wrap">{message.content}</p>
+                      {Array.isArray(message.quickActions) && message.quickActions.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {message.quickActions.map((action) => (
+                            <button
+                              key={action.id}
+                              type="button"
+                              onClick={() => handleQuickAction(action)}
+                              disabled={isSending}
+                              className="app-surface rounded-lg border px-2.5 py-1 text-xs font-medium transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {action.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      <p
+                        className={`mt-1 text-[10px] ${
+                          message.role === "user" ? "text-white/70" : "app-text-muted"
+                        }`}
+                      >
+                        {formatTime(message.createdAt)}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
 
             {isSending && (
@@ -348,6 +460,32 @@ function AriaAssistant() {
               </div>
             )}
           </div>
+
+          {pendingAction && (
+            <div className="app-border border-t px-4 py-3">
+              <p className="app-text-muted mb-2 text-xs font-medium uppercase tracking-wide">
+                Waiting for your confirmation
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => resolvePendingAction("confirm")}
+                  disabled={isResolvingAction}
+                  className="app-accent-btn flex-1 rounded-lg px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isResolvingAction ? "Working…" : "Confirm"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => resolvePendingAction("cancel")}
+                  disabled={isResolvingAction}
+                  className="app-surface-muted app-text flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="border-t border-red-200 bg-red-50 px-4 py-2 text-xs text-red-700">

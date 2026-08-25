@@ -77,12 +77,13 @@ function createAriaConversation({ userId, userName } = {}) {
     userName: name,
     title: `Conversation with ${name}`,
     messages: [],
+    pendingAction: null,
     createdAt: now,
     updatedAt: now,
   };
 }
 
-function addMessageToConversation(conversation, role, content) {
+function addMessageToConversation(conversation, role, content, meta = {}) {
   if (!conversation || !Array.isArray(conversation.messages)) {
     throw new Error("A valid conversation is required.");
   }
@@ -91,6 +92,9 @@ function addMessageToConversation(conversation, role, content) {
     id: crypto.randomUUID(),
     role,
     content,
+    kind: meta.kind || "text",
+    toolName: meta.toolName || null,
+    quickActions: Array.isArray(meta.quickActions) ? meta.quickActions : [],
     createdAt: new Date().toISOString(),
   };
 
@@ -98,6 +102,32 @@ function addMessageToConversation(conversation, role, content) {
   conversation.updatedAt = message.createdAt;
 
   return message;
+}
+
+/* Feature: ARIA consequential-action confirmation model */
+function setPendingAction(conversation, action) {
+  if (!conversation) {
+    throw new Error("A valid conversation is required.");
+  }
+
+  conversation.pendingAction = action
+    ? {
+        tool: action.tool,
+        params: action.params || {},
+        summary: action.summary || "",
+        createdAt: new Date().toISOString(),
+      }
+    : null;
+
+  return conversation.pendingAction;
+}
+
+function clearPendingAction(conversation) {
+  if (!conversation) {
+    throw new Error("A valid conversation is required.");
+  }
+
+  conversation.pendingAction = null;
 }
 
 function getConversationContext(conversation, limit = DEFAULT_CONTEXT_LIMIT) {
@@ -144,4 +174,6 @@ module.exports = {
   addMessageToConversation,
   getConversationContext,
   validateAriaRequest,
+  setPendingAction,
+  clearPendingAction,
 };

@@ -1,14 +1,37 @@
 import { NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
 import { auth } from "../../../auth";
 import { adminDb } from "../../../firebaseAdmin";
 import ariaCore from "../../../utils/ariaCore";
 import ariaService from "../../../utils/ariaService";
 import { createFirestoreConversationStore } from "../../../utils/ariaConversationStore";
+import { createAriaTools } from "../../../utils/ariaTools";
+import { logFileAction } from "../../../utils/fileAccessLog";
+import { createShareNotification } from "../../../utils/shareNotifications";
+import { getOwnedCollectionFiles } from "../../../utils/collectionSharing";
 
 export const runtime = "nodejs";
 
+const prisma = new PrismaClient();
+
 function getStore() {
   return createFirestoreConversationStore(adminDb);
+}
+
+/**
+ * The tool layer is the only thing allowed to touch Envoi's real data on
+ * ARIA's behalf. It never receives an identity from the client — every
+ * tool call re-derives the user from the authenticated session (see
+ * utils/ariaTools.js requireSession()).
+ */
+function getTools() {
+  return createAriaTools({
+    adminDb,
+    prisma,
+    logFileAction,
+    createShareNotification,
+    getOwnedCollectionFiles,
+  });
 }
 
 /* Feature: ARIA — load conversation history, greeting and quick actions */
@@ -44,7 +67,7 @@ export async function GET(request) {
   }
 }
 
-/* Feature: ARIA — send a message, server-side only call into the provider */
+/* Feature: ARIA — send a message / confirm or cancel a pending action */
 export async function POST(request) {
   try {
     const session = await auth();
@@ -60,6 +83,7 @@ export async function POST(request) {
       session,
       body,
       store: getStore(),
+      tools: getTools(),
     });
 
     if (!result.ok) {
