@@ -36,28 +36,32 @@ describe("ARIA intent router", () => {
     expect(intent.tool).toBe("create_collection");
   });
 
-  test("detects a password-protection intent with a filename and password", () => {
-    const intent = detectIntent('Password protect financial-report.pdf with password "hunter2"', {});
+  test("detects a password-protection intent with a filename — never asks for or extracts a password", () => {
+    const intent = detectIntent("Password protect financial-report.pdf", {});
     expect(intent).toMatchObject({
       type: "prepare_action",
-      tool: "apply_password_protection",
-      params: { fileName: "financial-report.pdf", password: "hunter2" },
+      tool: "prepare_password_protection",
+      params: { fileName: "financial-report.pdf" },
       needsClarification: false,
     });
+    expect(intent.params.password).toBeUndefined();
   });
 
-  test("password-protection intent needs clarification with no filename", () => {
+  test("password-protection intent needs clarification with no filename and no context", () => {
     const intent = detectIntent("Can you password protect it?", {});
     expect(intent.type).toBe("prepare_action");
     expect(intent.needsClarification).toBe(true);
   });
 
-  test("password-protection intent needs clarification when a filename is given but no password", () => {
-    const intent = detectIntent("Password protect financial-report.pdf", {});
-    expect(intent.type).toBe("prepare_action");
-    expect(intent.needsClarification).toBe(true);
-    expect(intent.params.fileName).toBe("financial-report.pdf");
-    expect(intent.params.password).toBeNull();
+  test("'protect it' resolves the filename from conversation context instead of asking again", () => {
+    const conversation = { lastFileContext: { fileId: "file-1", fileName: "financial-report.pdf" } };
+    const intent = detectIntent("Protect it.", conversation);
+    expect(intent).toMatchObject({
+      type: "prepare_action",
+      tool: "prepare_password_protection",
+      params: { fileId: "file-1", fileName: "financial-report.pdf" },
+      needsClarification: false,
+    });
   });
 
   test("detects an internal share intent when an email is present", () => {

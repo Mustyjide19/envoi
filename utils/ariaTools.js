@@ -1,8 +1,5 @@
 const fileCollectionValidation = require("./fileCollectionValidation");
 const directShareValidation = require("./directShareValidation");
-const smartShareContract = require("./smartShareContract");
-const sensitivityLabels = require("./sensitivityLabels");
-const shareLinkExpiry = require("./shareLinkExpiry");
 const fileSecurityCenter = require("./fileSecurityCenter");
 const fileUtils = require("./fileUtils");
 
@@ -181,11 +178,28 @@ async function searchFiles(deps, session, params = {}) {
 
   matched.sort((a, b) => String(b.id || "").localeCompare(String(a.id || "")));
 
-  return {
+  const result = {
     success: true,
     query,
     files: matched.slice(0, 20).map(shapeFileSummary),
   };
+
+  // A query that matches nothing (including garbled/typo input ARIA can't
+  // parse) still degrades gracefully to something genuinely useful — the
+  // user's real recent files — rather than a dead-end "no results". This
+  // is explicitly NOT a fabricated match: fallbackRecentFiles is a
+  // separate field the response formatter must label honestly.
+  if (result.files.length === 0 && extensions.length === 0) {
+    const fallback = allFiles
+      .sort((a, b) => String(b.id || "").localeCompare(String(a.id || "")))
+      .slice(0, 5)
+      .map(shapeFileSummary);
+    if (fallback.length > 0) {
+      result.fallbackRecentFiles = fallback;
+    }
+  }
+
+  return result;
 }
 
 async function getFileDetails(deps, session, params = {}) {
@@ -229,6 +243,169 @@ async function getFileDetails(deps, session, params = {}) {
       sharedWith: shares.map((share) => share.recipientEmail).filter(Boolean),
     },
   };
+}
+
+async function loadFileSecurityBundle(deps, file) {
+  const [accessLogsSnapshot, securityEventsSnapshot, sharesSnapshot] = await Promise.all([
+    deps.adminDb.collection("fileAccessLogs").where("fileId", "==", file.id).get(),
+    deps.adminDb.collection("securityEventLogs").where("fileId", "==", file.id).get(),
+    deps.adminDb.collection("sharedFiles").where("fileId", "==", file.id).get(),
+  ]);
+
+  const accessLogs = accessLogsSnapshot.docs.map((doc) => doc.data());
+  const securityEvents = securityEventsSnapshot.docs.map((doc) => doc.data());
+  const shares = sharesSnapshot.docs
+    .map((doc) => ({ id: doc.id, ...doc.data() }))
+    .filter((share) => !share.revokedAt && !share.collectionShareId);
+
+  const summary = fileSecurityCenter.evaluateFileSecurityCenter({
+    file,
+    accessLogs,
+    securityEvents,
+    shares,
+  });
+
+  return { summary, shares };
+}
+
+/** Answers "is X password protected / secure?" with just the real security state. */
+async function getFileSecurity(deps, session, params = {}) {
+  const user = requireSession(session);
+  const file = await getOwnedFileRecord(deps.adminDb, user.email, params);
+
+  if (!file) {
+    return { success: false, error: "File not found." };
+  }
+
+  const { summary } = await loadFileSecurityBundle(deps, file);
+
+  return {
+    success: true,
+    file: shapeFileSummary(file),
+    security: {
+      riskStatus: summary.riskStatus,
+      riskLabel: summary.riskLabel,
+      securityScore: summary.securityScore,
+      alertCount: summary.alerts.length,
+    },
+  };
+}
+
+/** Answers "who can access this file? / what's its sharing status?" */
+async function getFileSharingStatus(deps, session, params = {}) {
+  const user = requireSession(session);
+  const file = await getOwnedFileRecord(deps.adminDb, user.email, params);
+
+  if (!file) {
+    return { success: false, error: "File not found." };
+  }
+
+  const { shares } = await loadFileSecurityBundle(deps, file);
+
+  return {
+    success: true,
+    file: shapeFileSummary(file),
+    sharing: {
+      activeShareCount: shares.length,
+      sharedWith: shares.map((share) => share.recipientEmail).filter(Boolean),
+      hasExternalLink: !!file.shortUrl,
+    },
+  };
+}
+
+/** Read-only: resolves ownership then hands back a URL for the client to
+ * navigate to. Used for "review the security of this file" style requests
+ * where the user wants to actually open the existing Security Center page,
+ * not just hear a one-line status. No confirmation needed — opening a page
+ * mutates nothing. */
+async function openFileSecurity(deps, session, params = {}) {
+  const user = requireSession(session);
+  const file = await getOwnedFileRecord(deps.adminDb, user.email, params);
+
+  if (!file) {
+    return { success: false, error: "File not found." };
+  }
+
+  return {
+    success: true,
+    fileName: file.fileName,
+    fileId: file.id,
+    navigateTo: `/file-preview/${file.id}/security`,
+  };
+}
+
+async function getRecentActivity(deps, session, params = {}) {
+  const user = requireSession(session);
+  const limit = Math.min(Math.max(Number(params.limit) || 10, 1), 25);
+
+  const filesSnapshot = await deps.adminDb
+    .collection("uploadedFiles")
+    .where("userEmail", "==", user.email)
+    .get();
+
+  // Bounded to the most recent uploads rather than every file the user
+  // has ever owned, to keep this a handful of reads instead of scaling
+  // with total file count.
+  const recentFiles = filesSnapshot.docs
+    .map((doc) => ({ id: doc.id, fileName: doc.data().fileName || "" }))
+    .sort((a, b) => String(b.id || "").localeCompare(String(a.id || "")))
+    .slice(0, 10);
+
+  if (recentFiles.length === 0) {
+    return { success: true, activity: [] };
+  }
+
+  const perFileLogs = await Promise.all(
+    recentFiles.map((file) =>
+      deps.adminDb.collection("fileAccessLogs").where("fileId", "==", file.id).get()
+    )
+  );
+
+  const activity = [];
+  perFileLogs.forEach((snapshot, index) => {
+    snapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      activity.push({
+        fileId: recentFiles[index].id,
+        fileName: recentFiles[index].fileName,
+        action: data.action,
+        timestamp: data.timestamp,
+      });
+    });
+  });
+
+  activity.sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
+
+  return { success: true, activity: activity.slice(0, limit) };
+}
+
+async function listInternalRecipients(deps, session, params = {}) {
+  const user = requireSession(session);
+  const query = String(params.query || "").trim();
+
+  if (query.length < 3) {
+    return {
+      success: false,
+      error: "Give me at least a few characters of the recipient's email to search for.",
+    };
+  }
+
+  // Bounded, query-required lookup — deliberately NOT a browsable
+  // directory of all registered users, since Envoi has no existing
+  // precedent for exposing that and it would be a new information
+  // disclosure surface. This only confirms whether people matching what
+  // the user already typed are registered, same trust boundary as the
+  // existing share-by-email flow.
+  const matches = await deps.prisma.user.findMany({
+    where: {
+      email: { contains: query.toLowerCase() },
+      NOT: { email: user.email },
+    },
+    select: { email: true, name: true },
+    take: 5,
+  });
+
+  return { success: true, recipients: matches };
 }
 
 async function listCollections(deps, session, params = {}) {
@@ -353,76 +530,73 @@ async function commitCreateCollection(deps, session, actionParams) {
   };
 }
 
-async function prepareApplyPasswordProtection(deps, session, params = {}) {
+/**
+ * CRITICAL DESIGN CONSTRAINT: password protection never touches a
+ * password through ARIA at all — no chat-supplied password is ever
+ * accepted, stored, or set here. ARIA only verifies ownership and, once
+ * confirmed, hands back the existing file-preview page URL where the
+ * user enters their own password through Envoi's real security UI
+ * (app/(dashboard)/(routes)/file-preview/[fileId]/_components/FileShareForm.js).
+ * commit() performs no Firestore mutation whatsoever.
+ */
+async function preparePasswordProtection(deps, session, params = {}) {
   const user = requireSession(session);
   const file = await getOwnedFileRecord(deps.adminDb, user.email, params);
 
   if (!file) {
-    return { success: false, error: "File not found." };
-  }
-
-  const password = typeof params.password === "string" ? params.password : "";
-
-  if (!password.trim()) {
-    return { success: false, error: "A password is required to protect this file." };
+    return { success: false, error: "I couldn't find that file to protect." };
   }
 
   return {
     success: true,
-    summary: `Add password protection to "${file.fileName}".`,
+    summary: `Open the security controls for "${file.fileName}" so you can choose the password yourself.`,
     action: {
-      tool: "apply_password_protection",
-      params: { fileId: file.id, fileName: file.fileName, password },
+      tool: "prepare_password_protection",
+      params: { fileId: file.id, fileName: file.fileName },
     },
   };
 }
 
-async function commitApplyPasswordProtection(deps, session, actionParams) {
+async function commitPasswordProtection(deps, session, actionParams) {
   const user = requireSession(session);
   const file = await getOwnedFileRecord(deps.adminDb, user.email, {
     fileId: actionParams.fileId,
   });
 
   if (!file) {
-    return { success: false, error: "File not found." };
+    return { success: false, error: "I couldn't find that file to protect." };
   }
 
-  await deps.adminDb.collection("uploadedFiles").doc(file.id).update({
-    password: actionParams.password,
-  });
-
-  return { success: true, fileName: file.fileName, passwordProtected: true };
+  return {
+    success: true,
+    fileName: file.fileName,
+    navigateTo: `/file-preview/${file.id}`,
+  };
 }
 
+/**
+ * Same navigation-only constraint as password protection: an external
+ * share on this file's own public link is the same `password` field
+ * (see app/api/files/[fileId]/route.js PATCH), so ARIA never sets it —
+ * she explains the implications and hands the user to the real UI.
+ */
 async function prepareCreateExternalShare(deps, session, params = {}) {
   const user = requireSession(session);
   const file = await getOwnedFileRecord(deps.adminDb, user.email, params);
 
   if (!file) {
-    return { success: false, error: "File not found." };
+    return { success: false, error: "I couldn't find that file." };
   }
-
-  const password = typeof params.password === "string" ? params.password : "";
-  const linkExpiryOption = shareLinkExpiry.resolveShareLinkExpiry(
-    typeof params.linkExpiryOption === "string" ? params.linkExpiryOption : ""
-  );
 
   return {
     success: true,
     summary:
-      `Create an external share link for "${file.fileName}". ` +
-      "Anyone with the link" +
-      (password ? " who enters the password" : "") +
-      (linkExpiryOption.linkExpiresAt ? ` before it expires` : "") +
-      " will be able to access it — this is different from internal sharing, which only a registered Envoi user you name can access.",
+      `Open the sharing controls for "${file.fileName}". ` +
+      "Anyone with the external link can access it (optionally behind a password and/or an expiry you set yourself) — " +
+      "that's different from internal sharing, which only the specific registered Envoi user you name can access.",
     action: {
       tool: "create_external_share",
-      params: {
-        fileId: file.id,
-        fileName: file.fileName,
-        password,
-        linkExpiryOption: linkExpiryOption.linkExpiryOption,
-      },
+      params: { fileId: file.id, fileName: file.fileName },
     },
   };
 }
@@ -434,24 +608,14 @@ async function commitCreateExternalShare(deps, session, actionParams) {
   });
 
   if (!file) {
-    return { success: false, error: "File not found." };
+    return { success: false, error: "I couldn't find that file." };
   }
-
-  const resolvedExpiry = shareLinkExpiry.resolveShareLinkExpiry(
-    actionParams.linkExpiryOption || ""
-  );
-
-  await deps.adminDb.collection("uploadedFiles").doc(file.id).update({
-    password: actionParams.password || "",
-    linkExpiryOption: resolvedExpiry.linkExpiryOption,
-    linkExpiresAt: resolvedExpiry.linkExpiresAt,
-  });
 
   return {
     success: true,
     fileName: file.fileName,
     shortUrl: file.shortUrl || null,
-    passwordProtected: !!actionParams.password,
+    navigateTo: `/file-preview/${file.id}`,
   };
 }
 
@@ -593,14 +757,19 @@ const READ_TOOLS = {
   list_recent_files: listRecentFiles,
   search_files: searchFiles,
   get_file_details: getFileDetails,
+  get_file_security: getFileSecurity,
+  get_file_sharing_status: getFileSharingStatus,
+  open_file_security: openFileSecurity,
+  get_recent_activity: getRecentActivity,
+  list_internal_recipients: listInternalRecipients,
   list_collections: listCollections,
 };
 
 const ACTION_TOOLS = {
   create_collection: { prepare: prepareCreateCollection, commit: commitCreateCollection },
-  apply_password_protection: {
-    prepare: prepareApplyPasswordProtection,
-    commit: commitApplyPasswordProtection,
+  prepare_password_protection: {
+    prepare: preparePasswordProtection,
+    commit: commitPasswordProtection,
   },
   create_external_share: {
     prepare: prepareCreateExternalShare,

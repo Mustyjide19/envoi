@@ -93,9 +93,8 @@ describe("ARIA tools — authentication", () => {
     const adminDb = createFakeAdminDb(seedFiles());
     const tools = createAriaTools(buildDeps({ adminDb, prisma: createFakePrisma() }));
 
-    const result = await tools.prepareAction("apply_password_protection", null, {
+    const result = await tools.prepareAction("prepare_password_protection", null, {
       fileId: "file-a-1",
-      password: "hunter2",
     });
     expect(result.success).toBe(false);
     expect(result.error).toMatch(/authentication/i);
@@ -210,35 +209,36 @@ describe("ARIA tools — unknown tools and malformed params are rejected", () =>
 });
 
 describe("ARIA tools — consequential actions: prepare vs commit", () => {
-  test("apply_password_protection prepare() does not mutate the file", async () => {
+  test("prepare_password_protection never accepts or requires a password, and never mutates the file", async () => {
     const adminDb = createFakeAdminDb(seedFiles());
     const tools = createAriaTools(buildDeps({ adminDb, prisma: createFakePrisma() }));
 
-    const prepared = await tools.prepareAction("apply_password_protection", userASession, {
+    const prepared = await tools.prepareAction("prepare_password_protection", userASession, {
       fileId: "file-a-1",
-      password: "hunter2",
     });
 
     expect(prepared.success).toBe(true);
-    expect(prepared.action.tool).toBe("apply_password_protection");
+    expect(prepared.action.tool).toBe("prepare_password_protection");
+    expect(prepared.action.params.password).toBeUndefined();
 
     const snap = await adminDb.collection("uploadedFiles").doc("file-a-1").get();
-    expect(snap.data().password).toBe(""); // untouched
+    expect(snap.data().password).toBe(""); // untouched — ARIA never sets it
   });
 
-  test("apply_password_protection commit() actually sets the password", async () => {
+  test("prepare_password_protection commit() never writes a password — it only hands back a navigation target", async () => {
     const adminDb = createFakeAdminDb(seedFiles());
     const tools = createAriaTools(buildDeps({ adminDb, prisma: createFakePrisma() }));
 
-    const prepared = await tools.prepareAction("apply_password_protection", userASession, {
+    const prepared = await tools.prepareAction("prepare_password_protection", userASession, {
       fileId: "file-a-1",
-      password: "hunter2",
     });
     const committed = await tools.commitAction(prepared.action, userASession);
 
     expect(committed.success).toBe(true);
+    expect(committed.navigateTo).toBe("/file-preview/file-a-1");
+
     const snap = await adminDb.collection("uploadedFiles").doc("file-a-1").get();
-    expect(snap.data().password).toBe("hunter2");
+    expect(snap.data().password).toBe(""); // still untouched after "confirmation"
   });
 
   test("commit() re-checks ownership independently and refuses another user's file even with a crafted action", async () => {
@@ -247,15 +247,13 @@ describe("ARIA tools — consequential actions: prepare vs commit", () => {
 
     // Simulate a tampered/forged pending action naming a file User A does not own.
     const forgedAction = {
-      tool: "apply_password_protection",
-      params: { fileId: "file-b-1", password: "hunter2" },
+      tool: "prepare_password_protection",
+      params: { fileId: "file-b-1" },
     };
 
     const committed = await tools.commitAction(forgedAction, userASession);
     expect(committed.success).toBe(false);
-
-    const snap = await adminDb.collection("uploadedFiles").doc("file-b-1").get();
-    expect(snap.data().password).toBe(""); // Mallory's file untouched
+    expect(committed.navigateTo).toBeUndefined();
   });
 
   test("create_collection commit() creates a real collection document", async () => {

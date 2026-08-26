@@ -34,6 +34,7 @@ function buildProactiveEventMessage(type, payload = {}, userName = "there") {
           { id: "protect-file", label: "Protect it", prompt: `Password protect ${fileName}` },
           { id: "share-file", label: "Share it", prompt: `Share ${fileName} with someone` },
           { id: "review-security", label: "Review security", prompt: `Is ${fileName} secure?` },
+          { id: "add-to-collection", label: "Add to a collection", prompt: `Create a collection for ${fileName}` },
         ],
       };
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -31,8 +32,16 @@ const MESSAGE_KIND_ICON = {
   error: AlertTriangle,
 };
 
+const CONFIRM_BUTTON_LABEL = {
+  prepare_password_protection: "Protect File",
+  create_external_share: "Continue",
+  create_internal_share: "Confirm Share",
+  create_collection: "Create Collection",
+};
+
 /* Feature: ARIA assistant (native Envoi chat widget) */
 function AriaAssistant() {
+  const router = useRouter();
   // Opens by default so ARIA's time-aware greeting is part of the
   // initial dashboard experience, not something hidden behind a click —
   // but a stored preference (the user closed/minimized it before) wins
@@ -168,7 +177,7 @@ function AriaAssistant() {
     return () => clearTimeout(timeout);
   }, [open]);
 
-  async function sendMessage(text) {
+  async function sendMessage(text, fileSelection) {
     const trimmed = text.trim();
     if (!trimmed || isSending) return;
 
@@ -192,6 +201,7 @@ function AriaAssistant() {
         body: JSON.stringify({
           message: trimmed,
           conversationId: conversationId || undefined,
+          ...(fileSelection ? { fileSelection } : {}),
         }),
       });
 
@@ -240,8 +250,19 @@ function AriaAssistant() {
         return;
       }
 
-      setMessages(data.conversation.messages || []);
+      const nextMessages = data.conversation.messages || [];
+      setMessages(nextMessages);
       setPendingAction(data.conversation.pendingAction || null);
+
+      // ARIA "gets the user there" — when a confirmed action's outcome is
+      // a navigation target (e.g. password protection, which she never
+      // handles herself), actually take them to the real Envoi page
+      // rather than just mentioning it. Brief delay so the confirmation
+      // message is visible before the page changes.
+      const navigateTo = nextMessages[nextMessages.length - 1]?.navigateTo;
+      if (navigateTo) {
+        setTimeout(() => router.push(navigateTo), 700);
+      }
     } catch {
       setError("ARIA is unavailable right now. Please try again.");
     } finally {
@@ -266,7 +287,7 @@ function AriaAssistant() {
       inputRef.current?.focus();
       return;
     }
-    void sendMessage(action.prompt);
+    void sendMessage(action.prompt, action.fileSelection);
   }
 
   async function handleClearConversation() {
@@ -424,6 +445,15 @@ function AriaAssistant() {
                         />
                       )}
                       <p className="whitespace-pre-wrap">{message.content}</p>
+                      {message.navigateTo && (
+                        <button
+                          type="button"
+                          onClick={() => router.push(message.navigateTo)}
+                          className="app-accent-text mt-2 text-xs font-semibold underline underline-offset-2"
+                        >
+                          Open →
+                        </button>
+                      )}
                       {Array.isArray(message.quickActions) && message.quickActions.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {message.quickActions.map((action) => (
@@ -473,7 +503,7 @@ function AriaAssistant() {
                   disabled={isResolvingAction}
                   className="app-accent-btn flex-1 rounded-lg px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {isResolvingAction ? "Working…" : "Confirm"}
+                  {isResolvingAction ? "Working…" : CONFIRM_BUTTON_LABEL[pendingAction.tool] || "Confirm"}
                 </button>
                 <button
                   type="button"

@@ -20,6 +20,11 @@ function createFirestoreConversationStore(adminDb, options = {}) {
       userName: conversationData.userName,
       title: conversationData.title,
       pendingAction: conversationData.pendingAction || null,
+      lastFileContext: conversationData.lastFileContext || null,
+      lastFileResults: Array.isArray(conversationData.lastFileResults)
+        ? conversationData.lastFileResults
+        : [],
+      awaitingInput: conversationData.awaitingInput || null,
       createdAt: conversationData.createdAt,
       updatedAt: conversationData.updatedAt,
       messages: messageDocs.map((doc) => {
@@ -31,6 +36,7 @@ function createFirestoreConversationStore(adminDb, options = {}) {
           kind: data.kind || "text",
           toolName: data.toolName || null,
           quickActions: Array.isArray(data.quickActions) ? data.quickActions : [],
+          navigateTo: data.navigateTo || null,
           createdAt: data.createdAt,
           _persisted: true,
         };
@@ -85,6 +91,11 @@ function createFirestoreConversationStore(adminDb, options = {}) {
           userName: conversation.userName || null,
           title: conversation.title || null,
           pendingAction: conversation.pendingAction || null,
+          lastFileContext: conversation.lastFileContext || null,
+          lastFileResults: Array.isArray(conversation.lastFileResults)
+            ? conversation.lastFileResults
+            : [],
+          awaitingInput: conversation.awaitingInput || null,
           createdAt: conversation.createdAt,
           updatedAt: conversation.updatedAt,
         },
@@ -104,6 +115,7 @@ function createFirestoreConversationStore(adminDb, options = {}) {
         kind: message.kind || "text",
         toolName: message.toolName || null,
         quickActions: Array.isArray(message.quickActions) ? message.quickActions : [],
+        navigateTo: message.navigateTo || null,
         createdAt: message.createdAt,
       });
       message.id = messageRef.id;

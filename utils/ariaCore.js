@@ -78,9 +78,89 @@ function createAriaConversation({ userId, userName } = {}) {
     title: `Conversation with ${name}`,
     messages: [],
     pendingAction: null,
+    lastFileContext: null,
+    lastFileResults: [],
+    awaitingInput: null,
     createdAt: now,
     updatedAt: now,
   };
+}
+
+const MAX_FILE_RESULTS = 10;
+
+/**
+ * Feature: ARIA result-set context ("the first one", "the CV").
+ *
+ * Tracks the last set of files ARIA showed the user, bounded and separate
+ * from lastFileContext (which tracks a single current file, e.g. one just
+ * uploaded). Ordinal/name references resolve against this list — still
+ * only a hint: every tool re-fetches and re-checks ownership before
+ * acting on whatever fileId this resolves to.
+ */
+function setLastFileResults(conversation, files) {
+  if (!conversation) {
+    throw new Error("A valid conversation is required.");
+  }
+
+  conversation.lastFileResults = Array.isArray(files)
+    ? files.slice(0, MAX_FILE_RESULTS).map((file) => ({
+        fileId: file.fileId || file.id,
+        fileName: file.fileName || "",
+      }))
+    : [];
+
+  return conversation.lastFileResults;
+}
+
+/**
+ * Feature: generic "ARIA asked a specific follow-up question" state (e.g.
+ * "what should the collection be called?", "who should I share this
+ * with?"). The next plain-text message is then interpreted as the answer
+ * to that specific question rather than run through normal intent
+ * detection. Cleared as soon as it's consumed (answered, or the user
+ * moves on to something else).
+ */
+function setAwaitingInput(conversation, awaitingInput) {
+  if (!conversation) {
+    throw new Error("A valid conversation is required.");
+  }
+
+  conversation.awaitingInput = awaitingInput || null;
+  return conversation.awaitingInput;
+}
+
+function clearAwaitingInput(conversation) {
+  if (!conversation) {
+    throw new Error("A valid conversation is required.");
+  }
+
+  conversation.awaitingInput = null;
+}
+
+/**
+ * Feature: ARIA context resolution ("it" / "this file").
+ *
+ * Tracks the file the user most recently uploaded or discussed so a
+ * follow-up like "password protect it" doesn't require repeating the
+ * filename. This is a *hint* only — every tool still independently
+ * re-fetches the file and re-checks ownership by the authenticated
+ * session before acting on it, so a stale or tampered context can never
+ * grant access to something the user doesn't actually own.
+ */
+function setLastFileContext(conversation, fileContext) {
+  if (!conversation) {
+    throw new Error("A valid conversation is required.");
+  }
+
+  conversation.lastFileContext = fileContext
+    ? {
+        fileId: fileContext.fileId,
+        fileName: fileContext.fileName || "",
+        setAt: new Date().toISOString(),
+      }
+    : null;
+
+  return conversation.lastFileContext;
 }
 
 function addMessageToConversation(conversation, role, content, meta = {}) {
@@ -95,6 +175,7 @@ function addMessageToConversation(conversation, role, content, meta = {}) {
     kind: meta.kind || "text",
     toolName: meta.toolName || null,
     quickActions: Array.isArray(meta.quickActions) ? meta.quickActions : [],
+    navigateTo: meta.navigateTo || null,
     createdAt: new Date().toISOString(),
   };
 
@@ -176,4 +257,8 @@ module.exports = {
   validateAriaRequest,
   setPendingAction,
   clearPendingAction,
+  setLastFileContext,
+  setLastFileResults,
+  setAwaitingInput,
+  clearAwaitingInput,
 };

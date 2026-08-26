@@ -94,6 +94,25 @@ function createFakePrisma(users = []) {
         }
         return null;
       },
+      async findMany({ where, take } = {}) {
+        let results = users;
+
+        if (where?.email?.contains) {
+          const needle = where.email.contains.toLowerCase();
+          results = results.filter((user) => user.email.toLowerCase().includes(needle));
+        }
+
+        if (where?.NOT?.email) {
+          const excluded = where.NOT.email.toLowerCase();
+          results = results.filter((user) => user.email.toLowerCase() !== excluded);
+        }
+
+        if (typeof take === "number") {
+          results = results.slice(0, take);
+        }
+
+        return results;
+      },
     },
   };
 }

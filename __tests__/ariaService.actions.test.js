@@ -141,20 +141,21 @@ describe("ARIA end-to-end — consequential actions require explicit confirmatio
     expect(adminDb._dump("fileCollections")).toHaveLength(0);
   });
 
-  test("confirming with 'yes' actually performs the prepared password-protection action", async () => {
+  test("confirming with 'yes' navigates to the existing security UI — ARIA never sets the password herself", async () => {
     const adminDb = createFakeAdminDb(seed());
     const tools = createAriaTools(buildDeps(adminDb, createFakePrisma()));
     const store = new Map();
 
     const prepareResult = await ariaService.handleAriaRequest({
       session: ada,
-      body: { message: 'Set a password "secret123" for analysis.py' },
+      body: { message: "Password protect analysis.py" },
       store,
       tools,
     });
     expect(prepareResult.conversation.pendingAction).toBeTruthy();
+    expect(prepareResult.conversation.pendingAction.tool).toBe("prepare_password_protection");
 
-    let snapBefore = await adminDb.collection("uploadedFiles").doc("file-a-1").get();
+    const snapBefore = await adminDb.collection("uploadedFiles").doc("file-a-1").get();
     expect(snapBefore.data().password).toBe("");
 
     const confirmResult = await ariaService.handleAriaRequest({
@@ -165,8 +166,36 @@ describe("ARIA end-to-end — consequential actions require explicit confirmatio
     });
 
     expect(confirmResult.conversation.pendingAction).toBeNull();
+    const lastMessage = confirmResult.conversation.messages[confirmResult.conversation.messages.length - 1];
+    expect(lastMessage.navigateTo).toBe("/file-preview/file-a-1");
+
+    // The whole point: no password ever touches the server via ARIA.
     const snapAfter = await adminDb.collection("uploadedFiles").doc("file-a-1").get();
-    expect(snapAfter.data().password).toBe("secret123");
+    expect(snapAfter.data().password).toBe("");
+  });
+
+  test("'protect it' resolves to the most recently uploaded file via context, with no filename repeated", async () => {
+    const adminDb = createFakeAdminDb(seed());
+    const tools = createAriaTools(buildDeps(adminDb, createFakePrisma()));
+    const store = new Map();
+
+    // Simulate the file_uploaded proactive event setting context, the way
+    // the real upload flow does via ariaService.handleAriaContextEvent.
+    const ariaEvents = require("../utils/ariaEvents");
+    const ariaCore = require("../utils/ariaCore");
+    const conversation = ariaCore.createAriaConversation({ userId: ada.user.id, userName: "Ada" });
+    ariaCore.setLastFileContext(conversation, { fileId: "file-a-1", fileName: "analysis.py" });
+    await store.set(conversation.id, conversation);
+
+    const result = await ariaService.handleAriaRequest({
+      session: ada,
+      body: { message: "Protect it.", conversationId: conversation.id },
+      store,
+      tools,
+    });
+
+    expect(result.conversation.pendingAction).toBeTruthy();
+    expect(result.conversation.pendingAction.params.fileId).toBe("file-a-1");
   });
 
   test("cancelling a pending action performs no mutation", async () => {
